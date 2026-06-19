@@ -40,7 +40,7 @@
 - [x] サインイン後のトップページにログイン中のユーザー名・uidを表示する
 
 ### Firestore初期設定
-- [ ] `firestore.rules` にセキュリティルールを記述する（`docs/requirements.md` 参照）
+- [x] `firestore.rules` にセキュリティルールを記述する（`docs/requirements.md` 参照）
 - [ ] Firestoreコンソールでセキュリティルールが反映されていることを確認する
 
 ### ✅ 完了確認
