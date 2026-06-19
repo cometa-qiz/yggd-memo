@@ -14,14 +14,6 @@ export default function LoginPage() {
     }
   }, [user, loading, router]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-zinc-400">読み込み中...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50">
       <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 px-10 py-12 flex flex-col items-center gap-8 w-full max-w-sm">

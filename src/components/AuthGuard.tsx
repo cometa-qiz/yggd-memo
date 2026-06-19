@@ -9,15 +9,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // trailingSlash: true により dev サーバーが /login → /login/ にリダイレクトするため両方に対応する
+  const isLoginPage = pathname === '/login' || pathname === '/login/';
+
   useEffect(() => {
     if (loading) return;
-    if (!user && pathname !== '/login') {
+    if (!user && !isLoginPage) {
       router.replace('/login');
     }
-  }, [user, loading, pathname, router]);
+  }, [user, loading, isLoginPage, router]);
 
   // /login ページは認証不要なので常に表示する
-  if (pathname === '/login') {
+  if (isLoginPage) {
     return <>{children}</>;
   }
 
