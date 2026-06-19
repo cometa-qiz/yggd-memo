@@ -37,7 +37,7 @@
 - [x] `src/app/login/page.tsx` を実装する（Googleサインインボタン）
 - [x] `AuthGuard.tsx`（Client Component）を実装する（`usePathname()` で `/login` を除外してリダイレクト）
 - [x] `src/app/layout.tsx` から `AuthGuard.tsx` を呼び出す
-- [ ] サインイン後のトップページにログイン中のユーザー名・uidを表示する
+- [x] サインイン後のトップページにログイン中のユーザー名・uidを表示する
 
 ### Firestore初期設定
 - [ ] `firestore.rules` にセキュリティルールを記述する（`docs/requirements.md` 参照）
