@@ -11,7 +11,7 @@
 **ゴール: `pnpm dev` でブラウザにトップページが表示される**
 
 ### セットアップ
-- [ ] Next.js + TypeScript のプロジェクトを作成する（`pnpm create next-app`・App Router使用）
+- [x] Next.js + TypeScript のプロジェクトを作成する（`pnpm create next-app`・App Router使用）
 - [ ] `next.config.ts` に `output: 'export'` / `trailingSlash: true` / `images: { unoptimized: true }` を設定する
 - [ ] Tailwind CSS の設定を確認する（create next-app で同時導入）
 - [ ] `.env.example` を作成する（`NEXT_PUBLIC_` プレフィックス形式で）
