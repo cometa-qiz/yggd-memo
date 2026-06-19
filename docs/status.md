@@ -35,7 +35,7 @@
 ### 認証
 - [x] `useAuth.ts` フックを実装する（サインイン・サインアウト・認証状態監視）
 - [x] `src/app/login/page.tsx` を実装する（Googleサインインボタン）
-- [ ] `AuthGuard.tsx`（Client Component）を実装する（`usePathname()` で `/login` を除外してリダイレクト）
+- [x] `AuthGuard.tsx`（Client Component）を実装する（`usePathname()` で `/login` を除外してリダイレクト）
 - [ ] `src/app/layout.tsx` から `AuthGuard.tsx` を呼び出す
 - [ ] サインイン後のトップページにログイン中のユーザー名・uidを表示する
 
