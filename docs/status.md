@@ -15,7 +15,7 @@
 - [x] `next.config.ts` に `output: 'export'` / `trailingSlash: true` / `images: { unoptimized: true }` を設定する
 - [x] Tailwind CSS の設定を確認する（create next-app で同時導入）
 - [x] `.env.example` を作成する（`NEXT_PUBLIC_` プレフィックス形式で）
-- [ ] `.env.local` が `.gitignore` に含まれていることを確認する
+- [x] `.env.local` が `.gitignore` に含まれていることを確認する
 
 ### ✅ 完了確認
 - [ ] `pnpm lint` がエラーなしで完了する
