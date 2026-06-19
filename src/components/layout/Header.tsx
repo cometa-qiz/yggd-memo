@@ -2,12 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { useBoards } from '@/hooks/useBoards';
+import { useBoardsContext } from '@/contexts/BoardsContext';
 import { useAuth } from '@/hooks/useAuth';
 
 export function Header() {
   const pathname = usePathname();
-  const { boards, currentBoard, switchBoard } = useBoards();
+  const { boards, currentBoard, switchBoard } = useBoardsContext();
   const { user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);

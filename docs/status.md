@@ -86,7 +86,7 @@
 - [x] `NoteInput.tsx` を実装する（「思いついたことをメモする...」入力欄＋＋ボタン）
 - [x] `NoteCard.tsx` を実装する（テキスト表示のみ、固定位置に表示）
 - [x] `Canvas.tsx` を実装する（notesを配列で受け取り、NoteCardを並べるだけ）
-- [ ] `src/app/page.tsx` を実装する
+- [x] `src/app/page.tsx` を実装する
 
 ### ✅ 完了確認
 - [ ] `pnpm build` が成功する
