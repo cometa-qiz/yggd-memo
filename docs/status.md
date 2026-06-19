@@ -41,7 +41,7 @@
 
 ### Firestore初期設定
 - [x] `firestore.rules` にセキュリティルールを記述する（`docs/requirements.md` 参照）
-- [ ] Firestoreコンソールでセキュリティルールが反映されていることを確認する
+- [x] Firestoreコンソールでセキュリティルールが反映されていることを確認する
 
 ### ✅ 完了確認
 - [ ] `pnpm build` が成功する
