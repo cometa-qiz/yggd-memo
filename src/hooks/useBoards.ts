@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './useAuth';
 import {
   subscribeBoards,
@@ -27,12 +27,20 @@ export function useBoards(): UseBoardsReturn {
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentBoardId, setCurrentBoardId] = useState<string | null>(null);
+  // onSnapshot が複数回発火しても初回の空リスト時に1回だけ作成するためのフラグ
+  const autoCreatedRef = useRef(false);
 
   useEffect(() => {
     if (!user) return;
+    autoCreatedRef.current = false;
     const unsubscribe = subscribeBoards(user.uid, (updated) => {
       setBoards(updated);
       setLoading(false);
+      // ボードが0件のとき「メインボード」を自動作成（重複防止フラグあり）
+      if (updated.length === 0 && !autoCreatedRef.current) {
+        autoCreatedRef.current = true;
+        createBoard(user.uid, 'メインボード');
+      }
       // 現在のボードが削除された場合は先頭ボードへフォールバック
       setCurrentBoardId((prev) => {
         if (prev && updated.some((b) => b.id === prev)) return prev;
