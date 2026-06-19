@@ -4,9 +4,10 @@ import { useState } from 'react';
 
 type Props = {
   addNote: (text: string, x: number, y: number) => Promise<string>;
+  disabled?: boolean;
 };
 
-export function NoteInput({ addNote }: Props) {
+export function NoteInput({ addNote, disabled = false }: Props) {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
 
@@ -40,7 +41,7 @@ export function NoteInput({ addNote }: Props) {
         />
         <button
           onClick={handleAdd}
-          disabled={!text.trim()}
+          disabled={disabled || !text.trim()}
           className="rounded bg-blue-500 px-4 py-2 text-white text-sm font-bold disabled:opacity-40 hover:bg-blue-600 active:bg-blue-700"
         >
           ＋

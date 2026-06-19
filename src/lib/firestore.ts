@@ -4,8 +4,6 @@ import {
   addDoc,
   updateDoc,
   onSnapshot,
-  query,
-  where,
   serverTimestamp,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -29,12 +27,12 @@ export function subscribeBoards(
   userId: string,
   onUpdate: (boards: Board[]) => void
 ): Unsubscribe {
-  const q = query(boardsCol(userId), where('isActive', '==', true));
   return onSnapshot(
-    q,
+    boardsCol(userId),
     (snap) => {
       const boards = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }) as Board)
+        .filter((b) => b.isActive)
         .sort((a, b) => a.createdAt?.toMillis?.() - b.createdAt?.toMillis?.());
       onUpdate(boards);
     },
@@ -111,12 +109,12 @@ export function subscribeNotes(
   boardId: string,
   onUpdate: (notes: Note[]) => void
 ): Unsubscribe {
-  const q = query(notesCol(userId, boardId), where('isActive', '==', true));
   return onSnapshot(
-    q,
+    notesCol(userId, boardId),
     (snap) => {
       const notes = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }) as Note)
+        .filter((n) => n.isActive)
         .sort((a, b) => a.createdAt?.toMillis?.() - b.createdAt?.toMillis?.());
       onUpdate(notes);
     },
