@@ -33,7 +33,7 @@
 - [x] `src/lib/firebase.ts` でFirebaseを初期化する（`.env.local` の環境変数を使用）
 
 ### 認証
-- [ ] `useAuth.ts` フックを実装する（サインイン・サインアウト・認証状態監視）
+- [x] `useAuth.ts` フックを実装する（サインイン・サインアウト・認証状態監視）
 - [ ] `src/app/login/page.tsx` を実装する（Googleサインインボタン）
 - [ ] `AuthGuard.tsx`（Client Component）を実装する（`usePathname()` で `/login` を除外してリダイレクト）
 - [ ] `src/app/layout.tsx` から `AuthGuard.tsx` を呼び出す
