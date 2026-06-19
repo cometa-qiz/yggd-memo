@@ -84,7 +84,7 @@
 
 ### UI（最小限）
 - [x] `NoteInput.tsx` を実装する（「思いついたことをメモする...」入力欄＋＋ボタン）
-- [ ] `NoteCard.tsx` を実装する（テキスト表示のみ、固定位置に表示）
+- [x] `NoteCard.tsx` を実装する（テキスト表示のみ、固定位置に表示）
 - [ ] `Canvas.tsx` を実装する（notesを配列で受け取り、NoteCardを並べるだけ）
 - [ ] `src/app/page.tsx` を実装する
 
