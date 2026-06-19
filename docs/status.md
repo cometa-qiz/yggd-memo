@@ -30,7 +30,7 @@
 
 ### Firebase SDK 導入
 - [x] Firebase SDK を導入する（`pnpm add firebase`）
-- [ ] `src/lib/firebase.ts` でFirebaseを初期化する（`.env.local` の環境変数を使用）
+- [x] `src/lib/firebase.ts` でFirebaseを初期化する（`.env.local` の環境変数を使用）
 
 ### 認証
 - [ ] `useAuth.ts` フックを実装する（サインイン・サインアウト・認証状態監視）
