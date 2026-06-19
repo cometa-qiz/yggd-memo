@@ -58,7 +58,7 @@
 
 ### 型定義・データ層
 - [x] `src/types/index.ts` に `Board` / `Note` / `Link` の型を定義する
-- [ ] `src/lib/firestore.ts` にボードの読み書き関数を実装する
+- [x] `src/lib/firestore.ts` にボードの読み書き関数を実装する
 - [ ] `useBoards.ts` フックを実装する（一覧取得・新規作成・名前変更・削除・切り替え）
 
 ### UI（仮設置・最小限）
