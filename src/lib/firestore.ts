@@ -6,7 +6,6 @@ import {
   onSnapshot,
   query,
   where,
-  orderBy,
   serverTimestamp,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -30,15 +29,17 @@ export function subscribeBoards(
   userId: string,
   onUpdate: (boards: Board[]) => void
 ): Unsubscribe {
-  const q = query(
-    boardsCol(userId),
-    where('isActive', '==', true),
-    orderBy('createdAt', 'asc')
+  const q = query(boardsCol(userId), where('isActive', '==', true));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const boards = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }) as Board)
+        .sort((a, b) => a.createdAt?.toMillis?.() - b.createdAt?.toMillis?.());
+      onUpdate(boards);
+    },
+    (err) => console.error('[subscribeBoards]', err)
   );
-  return onSnapshot(q, (snap) => {
-    const boards = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Board);
-    onUpdate(boards);
-  });
 }
 
 /** 新しいボードを作成して docId を返す */
@@ -110,15 +111,17 @@ export function subscribeNotes(
   boardId: string,
   onUpdate: (notes: Note[]) => void
 ): Unsubscribe {
-  const q = query(
-    notesCol(userId, boardId),
-    where('isActive', '==', true),
-    orderBy('createdAt', 'asc')
+  const q = query(notesCol(userId, boardId), where('isActive', '==', true));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const notes = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }) as Note)
+        .sort((a, b) => a.createdAt?.toMillis?.() - b.createdAt?.toMillis?.());
+      onUpdate(notes);
+    },
+    (err) => console.error('[subscribeNotes]', err)
   );
-  return onSnapshot(q, (snap) => {
-    const notes = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Note);
-    onUpdate(notes);
-  });
 }
 
 /** 新しいメモを作成して docId を返す */
