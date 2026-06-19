@@ -29,7 +29,7 @@
 **ゴール: Googleサインインが成功し、uidが画面に表示される**
 
 ### Firebase SDK 導入
-- [ ] Firebase SDK を導入する（`pnpm add firebase`）
+- [x] Firebase SDK を導入する（`pnpm add firebase`）
 - [ ] `src/lib/firebase.ts` でFirebaseを初期化する（`.env.local` の環境変数を使用）
 
 ### 認証
