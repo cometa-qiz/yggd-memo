@@ -11,7 +11,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Board, BoardSkin } from '@/types';
+import type { Board, BoardSkin, Note } from '@/types';
 
 // ── パスヘルパー ───────────────────────────────────────────────
 
@@ -87,6 +87,94 @@ export async function deactivateBoard(
   boardId: string
 ): Promise<void> {
   await updateDoc(boardRef(userId, boardId), {
+    isActive: false,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// ── メモのパスヘルパー ──────────────────────────────────────────
+
+function notesCol(userId: string, boardId: string) {
+  return collection(db, 'users', userId, 'boards', boardId, 'notes');
+}
+
+function noteRef(userId: string, boardId: string, noteId: string) {
+  return doc(db, 'users', userId, 'boards', boardId, 'notes', noteId);
+}
+
+// ── メモの読み書き関数 ──────────────────────────────────────────
+
+/** isActive:true のメモをリアルタイムで購読する */
+export function subscribeNotes(
+  userId: string,
+  boardId: string,
+  onUpdate: (notes: Note[]) => void
+): Unsubscribe {
+  const q = query(
+    notesCol(userId, boardId),
+    where('isActive', '==', true),
+    orderBy('createdAt', 'asc')
+  );
+  return onSnapshot(q, (snap) => {
+    const notes = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Note);
+    onUpdate(notes);
+  });
+}
+
+/** 新しいメモを作成して docId を返す */
+export async function createNote(
+  userId: string,
+  boardId: string,
+  text: string,
+  x: number,
+  y: number
+): Promise<string> {
+  const ref = await addDoc(notesCol(userId, boardId), {
+    text,
+    x,
+    y,
+    isActive: true,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+/** メモのテキストを更新する */
+export async function updateNoteText(
+  userId: string,
+  boardId: string,
+  noteId: string,
+  text: string
+): Promise<void> {
+  await updateDoc(noteRef(userId, boardId, noteId), {
+    text,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/** メモの位置を更新する（ドラッグ終了時のみ呼ぶ） */
+export async function updateNotePosition(
+  userId: string,
+  boardId: string,
+  noteId: string,
+  x: number,
+  y: number
+): Promise<void> {
+  await updateDoc(noteRef(userId, boardId, noteId), {
+    x,
+    y,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/** メモを論理削除する（isActive: false） */
+export async function deactivateNote(
+  userId: string,
+  boardId: string,
+  noteId: string
+): Promise<void> {
+  await updateDoc(noteRef(userId, boardId, noteId), {
     isActive: false,
     updatedAt: serverTimestamp(),
   });
