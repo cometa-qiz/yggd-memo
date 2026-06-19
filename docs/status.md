@@ -57,7 +57,7 @@
 **ゴール: ボードの作成・切り替え・削除がFirestoreに反映される**
 
 ### 型定義・データ層
-- [ ] `src/types/index.ts` に `Board` / `Note` / `Link` の型を定義する
+- [x] `src/types/index.ts` に `Board` / `Note` / `Link` の型を定義する
 - [ ] `src/lib/firestore.ts` にボードの読み書き関数を実装する
 - [ ] `useBoards.ts` フックを実装する（一覧取得・新規作成・名前変更・削除・切り替え）
 
