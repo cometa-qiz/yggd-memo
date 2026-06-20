@@ -5,6 +5,7 @@ import type { Note } from '@/types';
 
 type Props = {
   note: Note;
+  zoom?: number;
   onEdit: (noteId: string, text: string) => Promise<void>;
   onRemove: (noteId: string) => Promise<void>;
   onMove: (noteId: string, x: number, y: number) => Promise<void>;
@@ -19,6 +20,7 @@ const DRAG_THRESHOLD = 5;
 
 export function NoteCard({
   note,
+  zoom = 1,
   onEdit,
   onRemove,
   onMove,
@@ -90,7 +92,8 @@ export function NoteCard({
     }
 
     if (dragRef.current.active) {
-      setPos({ x: dragRef.current.startX + dx, y: dragRef.current.startY + dy });
+      // スクリーン座標の差分をノート座標系に変換（zoom > 1 のとき scale 分だけ補正）
+      setPos({ x: dragRef.current.startX + dx / zoom, y: dragRef.current.startY + dy / zoom });
     }
   }
 
@@ -100,8 +103,8 @@ export function NoteCard({
     dragRef.current.started = false;
 
     if (dragRef.current.active) {
-      const finalX = dragRef.current.startX + (e.clientX - dragRef.current.startPX);
-      const finalY = dragRef.current.startY + (e.clientY - dragRef.current.startPY);
+      const finalX = dragRef.current.startX + (e.clientX - dragRef.current.startPX) / zoom;
+      const finalY = dragRef.current.startY + (e.clientY - dragRef.current.startPY) / zoom;
       dragRef.current.active = false;
       setIsDragging(false);
       setPos({ x: finalX, y: finalY });
