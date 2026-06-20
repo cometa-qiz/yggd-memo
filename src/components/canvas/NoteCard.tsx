@@ -139,6 +139,7 @@ export function NoteCard({
       onPointerCancel={handlePointerUp}
       onPointerEnter={() => onConnectEnter(note.id)}
       onPointerLeave={() => onConnectLeave(note.id)}
+      onClick={(e) => e.stopPropagation()}
     >
       <div
         className={`relative rounded-lg border p-3 shadow-md bg-white transition-colors ${

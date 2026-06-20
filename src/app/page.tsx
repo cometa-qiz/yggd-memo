@@ -13,7 +13,7 @@ const DEFAULT_Y = 20;
 export default function Home() {
   const { currentBoard, loading: boardLoading } = useBoardsContext();
   const { notes, addNote, editNote, removeNote, moveNote } = useNotes(currentBoard?.id ?? null);
-  const { links, addLink } = useLinks(currentBoard?.id ?? null);
+  const { links, addLink, removeLink } = useLinks(currentBoard?.id ?? null);
 
   async function handleAddNote(text: string, _x: number, _y: number): Promise<string> {
     const { x, y } = findEmptyPosition(DEFAULT_X, DEFAULT_Y, notes);
@@ -35,6 +35,7 @@ export default function Home() {
         onRemove={removeNote}
         onMove={handleMoveNote}
         onAddLink={addLink}
+        onRemoveLink={removeLink}
       />
     </div>
   );

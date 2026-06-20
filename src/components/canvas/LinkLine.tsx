@@ -4,19 +4,41 @@ type Props = {
   x2: number;
   y2: number;
   dashed?: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
 };
 
-export function LinkLine({ x1, y1, x2, y2, dashed = false }: Props) {
-  // 水平方向のS字ベジェ曲線：両端で水平に接続し、中間でなめらかに遷移する
+export function LinkLine({
+  x1,
+  y1,
+  x2,
+  y2,
+  dashed = false,
+  selected = false,
+  onSelect,
+}: Props) {
   const dx = (x2 - x1) * 0.5;
   return (
     <path
       d={`M ${x1},${y1} C ${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`}
-      stroke="#94a3b8"
-      strokeWidth={2}
+      stroke={selected ? '#3b82f6' : '#94a3b8'}
+      strokeWidth={selected ? 3 : 2}
       fill="none"
       strokeLinecap="round"
       strokeDasharray={dashed ? '6 3' : undefined}
+      style={{
+        // onSelect がある確定線のみクリック可能にする（SVG親のpointer-events:noneを上書き）
+        pointerEvents: onSelect ? 'stroke' : 'none',
+        cursor: onSelect ? 'pointer' : 'default',
+      }}
+      onClick={
+        onSelect
+          ? (e) => {
+              e.stopPropagation();
+              onSelect();
+            }
+          : undefined
+      }
     />
   );
 }
