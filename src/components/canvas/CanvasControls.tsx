@@ -9,9 +9,19 @@ type Props = {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onCenter: () => void;
+  cutMode: boolean;
+  onToggleCutMode: () => void;
 };
 
-export function CanvasControls({ noteCount, zoom, onZoomIn, onZoomOut, onCenter }: Props) {
+export function CanvasControls({
+  noteCount,
+  zoom,
+  onZoomIn,
+  onZoomOut,
+  onCenter,
+  cutMode,
+  onToggleCutMode,
+}: Props) {
   return (
     <div
       className="absolute bottom-4 right-4 z-30 flex items-center gap-2 rounded-xl border border-gray-200 bg-white/90 px-3 py-2 shadow-lg backdrop-blur-sm"
@@ -51,6 +61,21 @@ export function CanvasControls({ noteCount, zoom, onZoomIn, onZoomOut, onCenter 
         aria-label="中央寄せ"
       >
         中央
+      </button>
+
+      <div className="h-4 w-px bg-gray-200" />
+
+      <button
+        onClick={onToggleCutMode}
+        className={`flex h-7 items-center justify-center gap-1 rounded-lg px-2 text-xs ${
+          cutMode
+            ? 'bg-red-100 text-red-600 ring-1 ring-red-300 hover:bg-red-200'
+            : 'text-gray-600 hover:bg-gray-100'
+        }`}
+        aria-label="切るモード切り替え"
+        aria-pressed={cutMode}
+      >
+        ✂ 切る
       </button>
     </div>
   );

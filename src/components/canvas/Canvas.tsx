@@ -33,11 +33,13 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
   const [connecting, setConnecting] = useState<ConnectState | null>(null);
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1.0);
+  const [cutMode, setCutMode] = useState(false);
   const notesById = new Map(notes.map((n) => [n.id, n]));
 
   // ── 接続操作 ────────────────────────────────────────────────────
 
   function handleConnectStart(fromId: string) {
+    if (cutMode) return;
     const note = notesById.get(fromId);
     if (!note) return;
     setSelectedLinkId(null);
@@ -110,6 +112,16 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
     setZoom(1.0);
   }
 
+  function handleToggleCutMode() {
+    setCutMode((prev) => {
+      if (!prev) {
+        // 切るモード ON: 接続中は中断
+        setConnecting(null);
+      }
+      return !prev;
+    });
+  }
+
   // ── チップ位置（S字ベジェ中点 = 両端の算術平均） ───────────────
 
   const selectedLink = selectedLinkId ? links.find((l) => l.id === selectedLinkId) : null;
@@ -122,8 +134,8 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
     <div
       className="relative flex-1 overflow-hidden bg-gray-50"
       style={{
-        cursor: connecting ? 'crosshair' : undefined,
-        touchAction: connecting ? 'none' : undefined,
+        cursor: cutMode || connecting ? 'crosshair' : undefined,
+        touchAction: cutMode || connecting ? 'none' : undefined,
       }}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}
@@ -197,6 +209,7 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
             key={note.id}
             note={note}
             zoom={zoom}
+            cutMode={cutMode}
             onEdit={onEdit}
             onRemove={onRemove}
             onMove={onMove}
@@ -215,6 +228,8 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onCenter={handleCenter}
+        cutMode={cutMode}
+        onToggleCutMode={handleToggleCutMode}
       />
     </div>
   );

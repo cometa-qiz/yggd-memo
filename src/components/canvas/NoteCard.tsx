@@ -6,6 +6,7 @@ import type { Note } from '@/types';
 type Props = {
   note: Note;
   zoom?: number;
+  cutMode?: boolean;
   onEdit: (noteId: string, text: string) => Promise<void>;
   onRemove: (noteId: string) => Promise<void>;
   onMove: (noteId: string, x: number, y: number) => Promise<void>;
@@ -21,6 +22,7 @@ const DRAG_THRESHOLD = 5;
 export function NoteCard({
   note,
   zoom = 1,
+  cutMode = false,
   onEdit,
   onRemove,
   onMove,
@@ -131,9 +133,11 @@ export function NoteCard({
         position: 'absolute',
         left: pos.x,
         top: pos.y,
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: cutMode ? 'default' : isDragging ? 'grabbing' : 'grab',
         zIndex: isDragging ? 10 : 1,
         touchAction: 'none',
+        // 切るモード中はカードへの全ポインターイベントを無効化し、背後の線をクリック可能にする
+        pointerEvents: cutMode ? 'none' : undefined,
       }}
       className="group min-w-[120px] max-w-[200px]"
       onPointerDown={handlePointerDown}
@@ -160,15 +164,17 @@ export function NoteCard({
           ✕
         </button>
 
-        {/* つなぐハンドル：ホバー時のみ表示（右辺中央） */}
-        <div
-          className="absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            onConnectStart(note.id);
-          }}
-          aria-label="つなぐ"
-        />
+        {/* つなぐハンドル：切るモード中は非表示、それ以外はホバー時のみ表示（右辺中央） */}
+        {!cutMode && (
+          <div
+            className="absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              onConnectStart(note.id);
+            }}
+            aria-label="つなぐ"
+          />
+        )}
 
         {editing ? (
           <textarea
