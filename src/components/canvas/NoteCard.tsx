@@ -140,6 +140,7 @@ export function NoteCard({
         pointerEvents: cutMode ? 'none' : undefined,
       }}
       className="group min-w-[120px] max-w-[200px]"
+      data-note-card="true"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

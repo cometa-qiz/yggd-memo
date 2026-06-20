@@ -26,6 +26,7 @@ export function CanvasControls({
     <div
       className="absolute bottom-4 right-4 z-30 flex items-center gap-2 rounded-xl border border-gray-200 bg-white/90 px-3 py-2 shadow-lg backdrop-blur-sm"
       onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
     >
       <span className="min-w-[3rem] text-center text-xs text-gray-500">
         {noteCount}件
