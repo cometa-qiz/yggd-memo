@@ -8,6 +8,7 @@ import {
   updateNoteText,
   updateNotePosition,
   deactivateNote,
+  deactivateLinksForNote,
 } from '@/lib/firestore';
 import type { Note } from '@/types';
 
@@ -61,6 +62,8 @@ export function useNotes(boardId: string | null): UseNotesReturn {
   const removeNote = useCallback(
     async (noteId: string): Promise<void> => {
       if (!user || !boardId) throw new Error('Not authenticated or no board');
+      // 関連リンクを先に論理削除してから、メモを論理削除する
+      await deactivateLinksForNote(user.uid, boardId, noteId);
       await deactivateNote(user.uid, boardId, noteId);
     },
     [user, boardId]

@@ -5,6 +5,9 @@ import {
   updateDoc,
   onSnapshot,
   serverTimestamp,
+  getDocs,
+  query,
+  where,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -236,4 +239,28 @@ export async function deactivateLink(
   await updateDoc(linkRef(userId, boardId, linkId), {
     isActive: false,
   });
+}
+
+/**
+ * メモに関連するすべてのアクティブなリンクを論理削除する。
+ * メモ削除時に呼び出すことで孤立リンクを防ぐ。
+ */
+export async function deactivateLinksForNote(
+  userId: string,
+  boardId: string,
+  noteId: string,
+): Promise<void> {
+  const col = linksCol(userId, boardId);
+  // a / b 各フィールドへの単一フィールドクエリ（自動インデックス）を並列実行
+  const [snapA, snapB] = await Promise.all([
+    getDocs(query(col, where('a', '==', noteId))),
+    getDocs(query(col, where('b', '==', noteId))),
+  ]);
+
+  // isActive: true のものだけをクライアント側で絞り込んで更新
+  const updates: Promise<void>[] = [
+    ...snapA.docs.filter((d) => d.data().isActive).map((d) => updateDoc(d.ref, { isActive: false })),
+    ...snapB.docs.filter((d) => d.data().isActive).map((d) => updateDoc(d.ref, { isActive: false })),
+  ];
+  await Promise.all(updates);
 }
