@@ -180,3 +180,60 @@ export async function deactivateNote(
     updatedAt: serverTimestamp(),
   });
 }
+
+// ── リンクのパスヘルパー ────────────────────────────────────────
+
+function linksCol(userId: string, boardId: string) {
+  return collection(db, 'users', userId, 'boards', boardId, 'links');
+}
+
+function linkRef(userId: string, boardId: string, linkId: string) {
+  return doc(db, 'users', userId, 'boards', boardId, 'links', linkId);
+}
+
+// ── リンクの読み書き関数 ────────────────────────────────────────
+
+/** isActive:true のリンクをリアルタイムで購読する */
+export function subscribeLinks(
+  userId: string,
+  boardId: string,
+  onUpdate: (links: import('@/types').Link[]) => void
+): Unsubscribe {
+  return onSnapshot(
+    linksCol(userId, boardId),
+    (snap) => {
+      const links = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }) as import('@/types').Link)
+        .filter((l) => l.isActive);
+      onUpdate(links);
+    },
+    (err) => console.error('[subscribeLinks]', err)
+  );
+}
+
+/** 新しいリンクを作成して docId を返す */
+export async function createLink(
+  userId: string,
+  boardId: string,
+  a: string,
+  b: string
+): Promise<string> {
+  const ref = await addDoc(linksCol(userId, boardId), {
+    a,
+    b,
+    isActive: true,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+/** リンクを論理削除する（isActive: false） */
+export async function deactivateLink(
+  userId: string,
+  boardId: string,
+  linkId: string
+): Promise<void> {
+  await updateDoc(linkRef(userId, boardId, linkId), {
+    isActive: false,
+  });
+}
