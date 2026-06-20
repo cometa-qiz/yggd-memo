@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { Note, Link } from '@/types';
 import { NoteCard } from './NoteCard';
 import { LinkLine } from './LinkLine';
@@ -12,11 +12,54 @@ const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3.0;
 const ZOOM_STEP = 0.25;
 
+// ── ジェスチャー交差判定（モジュールレベルのユーティリティ） ──────────
+
+function segmentsIntersect(
+  ax: number, ay: number, bx: number, by: number,
+  cx: number, cy: number, dx: number, dy: number,
+): boolean {
+  const d1x = bx - ax, d1y = by - ay;
+  const d2x = dx - cx, d2y = dy - cy;
+  const denom = d1x * d2y - d1y * d2x;
+  if (Math.abs(denom) < 1e-10) return false; // 平行
+  const t = ((cx - ax) * d2y - (cy - ay) * d2x) / denom;
+  const u = ((cx - ax) * d1y - (cy - ay) * d1x) / denom;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+}
+
+/** ジェスチャー線分がリンクのベジェ曲線と交差するか（ポリライン近似） */
+function gestureIntersectsLink(
+  ax: number, ay: number, bx: number, by: number,
+  x1: number, y1: number, x2: number, y2: number,
+): boolean {
+  const dxHalf = (x2 - x1) * 0.5;
+  const cp1x = x1 + dxHalf, cp2x = x2 - dxHalf;
+  const N = 20;
+  let prevBx = x1, prevBy = y1;
+  for (let i = 1; i <= N; i++) {
+    const t = i / N;
+    const mt = 1 - t;
+    const curBx = mt*mt*mt*x1 + 3*mt*mt*t*cp1x + 3*mt*t*t*cp2x + t*t*t*x2;
+    const curBy = mt*mt*mt*y1 + 3*mt*mt*t*y1   + 3*mt*t*t*y2   + t*t*t*y2;
+    if (segmentsIntersect(ax, ay, bx, by, prevBx, prevBy, curBx, curBy)) return true;
+    prevBx = curBx;
+    prevBy = curBy;
+  }
+  return false;
+}
+
+// ── 型定義 ───────────────────────────────────────────────────────
+
 type ConnectState = {
   fromId: string;
   cursorX: number;
   cursorY: number;
   targetId: string | null;
+};
+
+type CutLineState = {
+  x1: number; y1: number;
+  x2: number; y2: number;
 };
 
 type Props = {
@@ -34,6 +77,15 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1.0);
   const [cutMode, setCutMode] = useState(false);
+  const [cutLine, setCutLine] = useState<CutLineState | null>(null);
+
+  // ジェスチャー追跡（ref：レンダリングをまたぐ可変状態）
+  const cutStateRef = useRef<{
+    startX: number; startY: number;
+    prevX: number; prevY: number;
+    cutIds: Set<string>;
+  } | null>(null);
+
   const notesById = new Map(notes.map((n) => [n.id, n]));
 
   // ── 接続操作 ────────────────────────────────────────────────────
@@ -58,22 +110,59 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
     });
   }
 
-  // カーソル位置をノート座標系（zoom適用前）に変換して追跡
-  function handleCanvasPointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!connecting) return;
+  // ── キャンバスのポインターイベント（切るモードと接続モードを振り分け） ──
+
+  function handleCanvasPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (!cutMode) return;
     const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    cutStateRef.current = { startX: x, startY: y, prevX: x, prevY: y, cutIds: new Set() };
+    setCutLine({ x1: x, y1: y, x2: x, y2: y });
+  }
+
+  function handleCanvasPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+
+    if (cutMode) {
+      const state = cutStateRef.current;
+      if (!state) return;
+      const { prevX, prevY, cutIds, startX, startY } = state;
+
+      // 前フレームから現フレームへの線分で各リンクと交差判定
+      for (const link of links) {
+        if (cutIds.has(link.id)) continue;
+        const a = notesById.get(link.a);
+        const b = notesById.get(link.b);
+        if (!a || !b) continue;
+        if (gestureIntersectsLink(prevX, prevY, x, y, a.x + CARD_CX, a.y + CARD_CY, b.x + CARD_CX, b.y + CARD_CY)) {
+          cutIds.add(link.id);
+          onRemoveLink(link.id).catch(console.error);
+        }
+      }
+
+      state.prevX = x;
+      state.prevY = y;
+      setCutLine({ x1: startX, y1: startY, x2: x, y2: y });
+      return;
+    }
+
+    // 接続モードのカーソル追跡
+    if (!connecting) return;
     setConnecting((prev) =>
-      prev
-        ? {
-            ...prev,
-            cursorX: (e.clientX - rect.left) / zoom,
-            cursorY: (e.clientY - rect.top) / zoom,
-          }
-        : null,
+      prev ? { ...prev, cursorX: x, cursorY: y } : null,
     );
   }
 
   async function handleCanvasPointerUp() {
+    if (cutMode) {
+      cutStateRef.current = null;
+      setCutLine(null);
+      return;
+    }
     if (!connecting) return;
     const { fromId, targetId } = connecting;
     setConnecting(null);
@@ -83,17 +172,21 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
   }
 
   function handleCanvasPointerLeave() {
+    if (cutMode) {
+      cutStateRef.current = null;
+      setCutLine(null);
+      return;
+    }
     if (connecting) setConnecting(null);
   }
 
-  // ── 切る操作 ─────────────────────────────────────────────────────
+  // ── 切る操作（チップ） ────────────────────────────────────────────
 
   async function handleCutLink(linkId: string) {
     await onRemoveLink(linkId);
     setSelectedLinkId(null);
   }
 
-  // 背景クリックで選択解除（NoteCard・確定線は自身で stopPropagation）
   function handleCanvasClick() {
     setSelectedLinkId(null);
   }
@@ -114,10 +207,7 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
 
   function handleToggleCutMode() {
     setCutMode((prev) => {
-      if (!prev) {
-        // 切るモード ON: 接続中は中断
-        setConnecting(null);
-      }
+      if (!prev) setConnecting(null);
       return !prev;
     });
   }
@@ -137,6 +227,7 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
         cursor: cutMode || connecting ? 'crosshair' : undefined,
         touchAction: cutMode || connecting ? 'none' : undefined,
       }}
+      onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}
       onPointerLeave={handleCanvasPointerLeave}
@@ -180,6 +271,17 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
               x2={connecting.cursorX}
               y2={connecting.cursorY}
               dashed
+            />
+          )}
+          {/* 切るジェスチャーの軌跡（赤破線） */}
+          {cutMode && cutLine && (
+            <line
+              x1={cutLine.x1} y1={cutLine.y1}
+              x2={cutLine.x2} y2={cutLine.y2}
+              stroke="#ef4444"
+              strokeWidth={2}
+              strokeDasharray="4 2"
+              strokeLinecap="round"
             />
           )}
         </svg>
