@@ -3,9 +3,10 @@ type Props = {
   y1: number;
   x2: number;
   y2: number;
+  dashed?: boolean;
 };
 
-export function LinkLine({ x1, y1, x2, y2 }: Props) {
+export function LinkLine({ x1, y1, x2, y2, dashed = false }: Props) {
   // 水平方向のS字ベジェ曲線：両端で水平に接続し、中間でなめらかに遷移する
   const dx = (x2 - x1) * 0.5;
   return (
@@ -15,6 +16,7 @@ export function LinkLine({ x1, y1, x2, y2 }: Props) {
       strokeWidth={2}
       fill="none"
       strokeLinecap="round"
+      strokeDasharray={dashed ? '6 3' : undefined}
     />
   );
 }

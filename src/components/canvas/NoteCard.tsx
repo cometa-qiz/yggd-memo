@@ -8,21 +8,42 @@ type Props = {
   onEdit: (noteId: string, text: string) => Promise<void>;
   onRemove: (noteId: string) => Promise<void>;
   onMove: (noteId: string, x: number, y: number) => Promise<void>;
+  onConnectStart: (noteId: string) => void;
+  onConnectEnter: (noteId: string) => void;
+  onConnectLeave: (noteId: string) => void;
+  isConnectTarget: boolean;
 };
 
 const LONG_PRESS_MS = 500;
 const DRAG_THRESHOLD = 5;
 
-export function NoteCard({ note, onEdit, onRemove, onMove }: Props) {
+export function NoteCard({
+  note,
+  onEdit,
+  onRemove,
+  onMove,
+  onConnectStart,
+  onConnectEnter,
+  onConnectLeave,
+  isConnectTarget,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(note.text);
   const [pos, setPos] = useState({ x: note.x, y: note.y });
   const [isDragging, setIsDragging] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dragRef = useRef({ active: false, startPX: 0, startPY: 0, startX: 0, startY: 0 });
+  // started: pointerdown がこのカード上で起きたかのフラグ
+  // （接続モード中に pointermove がバブルしてきても誤ドラッグしないようにする）
+  const dragRef = useRef({
+    started: false,
+    active: false,
+    startPX: 0,
+    startPY: 0,
+    startX: 0,
+    startY: 0,
+  });
 
-  // Firestoreからの更新をドラッグ中以外に反映する
   useEffect(() => {
     if (!dragRef.current.active) {
       setPos({ x: note.x, y: note.y });
@@ -39,7 +60,14 @@ export function NoteCard({ note, onEdit, onRemove, onMove }: Props) {
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (editing) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { active: false, startPX: e.clientX, startPY: e.clientY, startX: pos.x, startY: pos.y };
+    dragRef.current = {
+      started: true,
+      active: false,
+      startPX: e.clientX,
+      startPY: e.clientY,
+      startX: pos.x,
+      startY: pos.y,
+    };
 
     timerRef.current = setTimeout(() => {
       if (!dragRef.current.active) {
@@ -50,7 +78,8 @@ export function NoteCard({ note, onEdit, onRemove, onMove }: Props) {
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (editing) return;
+    // started でない場合は接続モード中のバブルイベントなので無視
+    if (editing || !dragRef.current.started) return;
     const dx = e.clientX - dragRef.current.startPX;
     const dy = e.clientY - dragRef.current.startPY;
 
@@ -67,6 +96,9 @@ export function NoteCard({ note, onEdit, onRemove, onMove }: Props) {
 
   async function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
     cancelLongPress();
+    if (!dragRef.current.started) return;
+    dragRef.current.started = false;
+
     if (dragRef.current.active) {
       const finalX = dragRef.current.startX + (e.clientX - dragRef.current.startPX);
       const finalY = dragRef.current.startY + (e.clientY - dragRef.current.startPY);
@@ -100,13 +132,21 @@ export function NoteCard({ note, onEdit, onRemove, onMove }: Props) {
         zIndex: isDragging ? 10 : 1,
         touchAction: 'none',
       }}
-      className="min-w-[120px] max-w-[200px]"
+      className="group min-w-[120px] max-w-[200px]"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
+      onPointerEnter={() => onConnectEnter(note.id)}
+      onPointerLeave={() => onConnectLeave(note.id)}
     >
-      <div className="relative rounded-lg border border-gray-200 bg-white p-3 shadow-md">
+      <div
+        className={`relative rounded-lg border p-3 shadow-md bg-white transition-colors ${
+          isConnectTarget
+            ? 'border-blue-400 ring-2 ring-blue-200'
+            : 'border-gray-200'
+        }`}
+      >
         <button
           onClick={handleRemove}
           onPointerDown={(e) => e.stopPropagation()}
@@ -115,6 +155,16 @@ export function NoteCard({ note, onEdit, onRemove, onMove }: Props) {
         >
           ✕
         </button>
+
+        {/* つなぐハンドル：ホバー時のみ表示（右辺中央） */}
+        <div
+          className="absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            onConnectStart(note.id);
+          }}
+          aria-label="つなぐ"
+        />
 
         {editing ? (
           <textarea
