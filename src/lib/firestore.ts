@@ -242,6 +242,28 @@ export async function deactivateLink(
 }
 
 /**
+ * ボード内のアクティブなメモとリンクをすべて論理削除する（一括削除）。
+ * constraints.md ルール #8: isActive: false での論理削除のみ（物理削除禁止）
+ */
+export async function deactivateAllNotesAndLinks(
+  userId: string,
+  boardId: string,
+): Promise<void> {
+  const [notesSnap, linksSnap] = await Promise.all([
+    getDocs(query(notesCol(userId, boardId), where('isActive', '==', true))),
+    getDocs(query(linksCol(userId, boardId), where('isActive', '==', true))),
+  ]);
+  await Promise.all([
+    ...notesSnap.docs.map((d) =>
+      updateDoc(d.ref, { isActive: false, updatedAt: serverTimestamp() })
+    ),
+    ...linksSnap.docs.map((d) =>
+      updateDoc(d.ref, { isActive: false })
+    ),
+  ]);
+}
+
+/**
  * メモに関連するすべてのアクティブなリンクを論理削除する。
  * メモ削除時に呼び出すことで孤立リンクを防ぐ。
  */
