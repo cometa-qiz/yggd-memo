@@ -210,7 +210,7 @@
 **ゴール: 公開URLでアプリが動作する**
 
 ### デプロイ設定
-- [ ] Firebase CLI を開発依存として導入する（`pnpm add -D firebase-tools`）
+- [x] Firebase CLI を開発依存として導入する（`pnpm add -D firebase-tools`）
 - [ ] `package.json` の `scripts` に以下を追加する
   ```json
   "firebase:login": "firebase login",
