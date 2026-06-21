@@ -170,7 +170,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         touchAction: 'none',
         pointerEvents: cutMode ? 'none' : undefined,
       }}
-      className="group min-w-[120px] max-w-[200px]"
+      className="group relative min-w-[150px] max-w-[250px]"
       data-note-card="true"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -181,19 +181,27 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
       onClick={handleClick}
     >
       {/*
-       * カード本体: clipClass で葉↔角丸四角をアニメーション。
-       * 削除ボタン・接続ハンドルはこの要素の外（兄弟要素）に置き、
-       * clip-path によって切り抜かれないようにする。
+       * カード背景レイヤー（.leaf）: clip-path＋グラデーションのみ。
+       * absolute inset-0 で親の全域を覆い、z-index:0 でテキストの背面に置く。
+       * filter:drop-shadow はこのレイヤーに掛けることで clip 外に影が出る。
        */}
       <div
-        className={`${clipClass} relative p-3`}
+        className={clipClass}
         style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
           background: 'var(--card-fill)',
           filter: isConnectTarget
             ? 'var(--card-filter) drop-shadow(0 0 9px rgba(var(--accent-rgb),.85))'
             : 'var(--card-filter)',
-          color: 'var(--ink)',
         }}
+      />
+
+      {/* テキスト本体: 背景レイヤーより前面（z-index:1）に配置 */}
+      <div
+        className="relative p-3"
+        style={{ zIndex: 1, color: 'var(--ink)' }}
       >
         {editing ? (
           <textarea
@@ -203,6 +211,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
             autoFocus
             rows={3}
             className="w-full resize-none bg-transparent text-sm focus:outline-none"
+            style={{ color: 'var(--ink)' }}
           />
         ) : (
           <p className="select-none whitespace-pre-wrap break-words text-sm">
@@ -211,7 +220,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         )}
       </div>
 
-      {/* 削除ボタン: clip-path の外側（外側 div の直接子）に配置 */}
+      {/* 削除ボタン: 両レイヤーの外側（兄弟要素）に配置 */}
       <button
         onClick={(e) => { e.stopPropagation(); handleRemove(e); }}
         onPointerDown={(e) => e.stopPropagation()}

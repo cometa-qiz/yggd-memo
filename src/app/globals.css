@@ -102,7 +102,7 @@ body {
   --line:        rgba(170,220,180,.12);
   --shadow:      rgba(0,0,0,.5);
   --ambient-1:   rgba(46,167,99,.18);
-  --card-fill:   linear-gradient(150deg, color-mix(in srgb, #173524 84%, #79cf94 16%), #173524 58%);
+  --card-fill:   linear-gradient(150deg, #274E36, #173524 58%);
   --card-filter: drop-shadow(0 3px 5px rgba(0,0,0,.5)) drop-shadow(0 0 1px rgba(150,210,160,.5));
   --header-grad: linear-gradient(180deg, #0A4A22, #003A17);
   --canvas-image: radial-gradient(var(--field-dot) 1.4px, transparent 1.4px);
@@ -124,7 +124,7 @@ body {
   --line:        rgba(190,200,230,.12);
   --shadow:      rgba(0,0,0,.5);
   --ambient-1:   rgba(124,140,240,.14);
-  --card-fill:   linear-gradient(150deg, color-mix(in srgb, #23262F 88%, #8c96d8 12%), #23262F 60%);
+  --card-fill:   linear-gradient(150deg, #303343, #23262F 60%);
   --card-filter: drop-shadow(0 3px 6px rgba(0,0,0,.5));
   --header-grad: linear-gradient(180deg, #2A2D38, #1A1C24);
   --canvas-image: radial-gradient(var(--field-dot) 1.4px, transparent 1.4px);

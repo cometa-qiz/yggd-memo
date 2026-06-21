@@ -5,14 +5,6 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useBoardsContext } from '@/contexts/BoardsContext';
 import { useAuth } from '@/hooks/useAuth';
-import type { BoardSkin } from '@/types';
-
-const SKIN_LOGO_COLOR: Record<BoardSkin, string> = {
-  leaf:    '#16a34a',
-  default: '#71717a',
-  cloud:   '#0ea5e9',
-};
-
 export function Header() {
   const pathname = usePathname();
   const { boards, currentBoard, switchBoard } = useBoardsContext();
@@ -35,16 +27,22 @@ export function Header() {
   // ログインページでは非表示
   if (pathname === '/login' || pathname === '/login/') return null;
 
-  const logoColor = SKIN_LOGO_COLOR[currentBoard?.skin ?? 'leaf'];
+  const skin = currentBoard?.skin ?? 'leaf';
 
   return (
-    <header className="sticky top-0 z-10 h-12 flex items-center gap-3 px-4 bg-white border-b border-zinc-100 shrink-0">
-      {/* ロゴ: logo-mask.svg を CSS mask で表示し、スキンに応じて色を変える */}
+    <header
+      className={`sticky top-0 z-10 h-12 flex items-center gap-3 px-4 shrink-0 skin-${skin}`}
+      style={{
+        background: 'var(--header-grad)',
+        borderBottom: '1px solid var(--line)',
+      }}
+    >
+      {/* ロゴ: logo-mask.svg を CSS mask で表示し、--ink 色（スキン連動）で塗る */}
       <span
         aria-hidden
         className="shrink-0 w-5 h-5 block"
         style={{
-          backgroundColor: logoColor,
+          backgroundColor: 'var(--ink)',
           WebkitMaskImage: 'url(/logo-mask.svg)',
           WebkitMaskSize: 'contain',
           WebkitMaskRepeat: 'no-repeat',
@@ -54,7 +52,7 @@ export function Header() {
           transition: 'background-color 0.3s ease',
         }}
       />
-      <span className="text-sm font-semibold text-zinc-900 shrink-0 select-none">
+      <span className="text-sm font-semibold shrink-0 select-none" style={{ color: 'var(--ink)' }}>
         Yggd-memo
       </span>
 
@@ -62,7 +60,12 @@ export function Header() {
       <select
         value={currentBoard?.id ?? ''}
         onChange={(e) => switchBoard(e.target.value)}
-        className="flex-1 min-w-0 max-w-xs text-sm border border-zinc-200 rounded-lg px-3 py-1 bg-white text-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-300 cursor-pointer"
+        className="flex-1 min-w-0 max-w-xs text-sm rounded-lg px-3 py-1 focus:outline-none cursor-pointer"
+        style={{
+          background: 'var(--glass)',
+          color: 'var(--ink)',
+          border: '1px solid var(--line)',
+        }}
         aria-label="ボードを切り替える"
       >
         {boards.map((board) => (
