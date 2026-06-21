@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef, forwardRef } from 'react';
 import type { Note, BoardSkin } from '@/types';
 
-// スキンごとのカード配色
+// スキンごとのカード配色（ロゴ色と対応: 葉=緑 / デフォルト=グレー / 雲=水色）
 const SKIN_CARD: Record<BoardSkin, { bg: string; border: string }> = {
-  leaf:    { bg: 'bg-white',   border: 'border-gray-200' },
-  default: { bg: 'bg-white',   border: 'border-zinc-300' },
-  cloud:   { bg: 'bg-sky-50',  border: 'border-sky-200'  },
+  leaf:    { bg: 'bg-green-50', border: 'border-green-200' },
+  default: { bg: 'bg-white',    border: 'border-zinc-300'  },
+  cloud:   { bg: 'bg-sky-100',  border: 'border-sky-300'   },
 };
 
 type Props = {

@@ -71,6 +71,12 @@ type Props = {
   onRemoveLink: (linkId: string) => Promise<void>;
 };
 
+const SKIN_CANVAS_BG: Record<BoardSkin, string> = {
+  leaf:    'bg-green-50',
+  default: 'bg-gray-50',
+  cloud:   'bg-sky-50',
+};
+
 export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, onAddLink, onRemoveLink }: Props) {
   const [connecting, setConnecting] = useState<ConnectState | null>(null);
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
@@ -452,7 +458,7 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
   return (
     <div
       ref={canvasRef}
-      className="relative flex-1 overflow-hidden bg-gray-50"
+      className={`relative flex-1 overflow-hidden ${SKIN_CANVAS_BG[skin]}`}
       style={{
         cursor: cutMode ? 'crosshair' : connecting ? 'crosshair' : panDragging ? 'grabbing' : 'grab',
         touchAction: 'none',
