@@ -5,7 +5,7 @@ import { useBoardsContext } from '@/contexts/BoardsContext';
 import type { Board } from '@/types';
 
 export function BoardManager() {
-  const { boards, currentBoard, addBoard, renameBoard, switchBoard } = useBoardsContext();
+  const { boards, currentBoard, addBoard, renameBoard, removeBoard, switchBoard } = useBoardsContext();
 
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
@@ -105,6 +105,14 @@ export function BoardManager() {
                   aria-label={`${board.name} の名前を変更`}
                 >
                   名前変更
+                </button>
+                <button
+                  onClick={() => removeBoard(board.id)}
+                  disabled={boards.length <= 1}
+                  className="shrink-0 text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  aria-label={`${board.name} を削除`}
+                >
+                  削除
                 </button>
               </>
             )}
