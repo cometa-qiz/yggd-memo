@@ -31,6 +31,7 @@ export default function Home() {
       <Canvas
         notes={notes}
         links={links}
+        skin={currentBoard?.skin ?? 'leaf'}
         onEdit={editNote}
         onRemove={removeNote}
         onMove={handleMoveNote}

@@ -4,6 +4,13 @@ import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useBoardsContext } from '@/contexts/BoardsContext';
 import { useAuth } from '@/hooks/useAuth';
+import type { BoardSkin } from '@/types';
+
+const SKIN_LOGO_COLOR: Record<BoardSkin, string> = {
+  leaf:    '#16a34a',
+  default: '#71717a',
+  cloud:   '#0ea5e9',
+};
 
 export function Header() {
   const pathname = usePathname();
@@ -27,9 +34,25 @@ export function Header() {
   // ログインページでは非表示
   if (pathname === '/login' || pathname === '/login/') return null;
 
+  const logoColor = SKIN_LOGO_COLOR[currentBoard?.skin ?? 'leaf'];
+
   return (
     <header className="sticky top-0 z-10 h-12 flex items-center gap-3 px-4 bg-white border-b border-zinc-100 shrink-0">
-      {/* ロゴ */}
+      {/* ロゴ: logo-mask.svg を CSS mask で表示し、スキンに応じて色を変える */}
+      <span
+        aria-hidden
+        className="shrink-0 w-5 h-5 block"
+        style={{
+          backgroundColor: logoColor,
+          WebkitMaskImage: 'url(/logo-mask.svg)',
+          WebkitMaskSize: 'contain',
+          WebkitMaskRepeat: 'no-repeat',
+          maskImage: 'url(/logo-mask.svg)',
+          maskSize: 'contain',
+          maskRepeat: 'no-repeat',
+          transition: 'background-color 0.3s ease',
+        }}
+      />
       <span className="text-sm font-semibold text-zinc-900 shrink-0 select-none">
         Yggd-memo
       </span>

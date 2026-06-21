@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import type { Note, Link } from '@/types';
+import type { Note, Link, BoardSkin } from '@/types';
 import { NoteCard } from './NoteCard';
 import { LinkLine } from './LinkLine';
 import { CanvasControls } from './CanvasControls';
@@ -63,6 +63,7 @@ type CutLineState = { x1: number; y1: number; x2: number; y2: number };
 type Props = {
   notes: Note[];
   links: Link[];
+  skin?: BoardSkin;
   onEdit: (noteId: string, text: string) => Promise<void>;
   onRemove: (noteId: string) => Promise<void>;
   onMove: (noteId: string, x: number, y: number) => Promise<void>;
@@ -70,7 +71,7 @@ type Props = {
   onRemoveLink: (linkId: string) => Promise<void>;
 };
 
-export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRemoveLink }: Props) {
+export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, onAddLink, onRemoveLink }: Props) {
   const [connecting, setConnecting] = useState<ConnectState | null>(null);
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1.0);
@@ -545,6 +546,7 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
             key={note.id}
             ref={(el) => { cardElMapRef.current.set(note.id, el); }}
             note={note}
+            skin={skin}
             zoom={zoom}
             cutMode={cutMode}
             onEdit={onEdit}

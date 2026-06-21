@@ -1,10 +1,18 @@
 'use client';
 
 import { useState, useEffect, useRef, forwardRef } from 'react';
-import type { Note } from '@/types';
+import type { Note, BoardSkin } from '@/types';
+
+// スキンごとのカード配色
+const SKIN_CARD: Record<BoardSkin, { bg: string; border: string }> = {
+  leaf:    { bg: 'bg-white',   border: 'border-gray-200' },
+  default: { bg: 'bg-white',   border: 'border-zinc-300' },
+  cloud:   { bg: 'bg-sky-50',  border: 'border-sky-200'  },
+};
 
 type Props = {
   note: Note;
+  skin?: BoardSkin;
   zoom?: number;
   cutMode?: boolean;
   onEdit: (noteId: string, text: string) => Promise<void>;
@@ -23,6 +31,7 @@ const DRAG_THRESHOLD = 5;
 
 export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
   note,
+  skin = 'leaf',
   zoom = 1,
   cutMode = false,
   onEdit,
@@ -61,8 +70,10 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
     }
   }, [note.x, note.y]);
 
-  // clip class が変わるたびにアニメーション開始を通知する
-  const clipClass = editing || expanded ? 'clip-rounded-rect' : 'clip-leaf';
+  // skin と展開状態からクリップパスクラスを決定する
+  // collapsed 時: leaf→clip-leaf / cloud→clip-cloud / default→clip-rounded-rect（変形なし）
+  const collapsedClass = skin === 'cloud' ? 'clip-cloud' : skin === 'default' ? 'clip-rounded-rect' : 'clip-leaf';
+  const clipClass = editing || expanded ? 'clip-rounded-rect' : collapsedClass;
   const prevClipClassRef = useRef(clipClass);
   useEffect(() => {
     if (clipClass !== prevClipClassRef.current) {
@@ -181,10 +192,10 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
        * clip-path によって切り抜かれないようにする。
        */}
       <div
-        className={`${clipClass} relative border p-3 shadow-md bg-white ${
+        className={`${clipClass} relative border p-3 shadow-md ${SKIN_CARD[skin].bg} ${
           isConnectTarget
             ? 'border-blue-400 ring-2 ring-blue-200'
-            : 'border-gray-200'
+            : SKIN_CARD[skin].border
         }`}
       >
         {editing ? (
