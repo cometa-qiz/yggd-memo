@@ -251,6 +251,28 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         )}
       </div>
 
+      {/* タイムスタンプ: body の外側（兄弟）に配置。モックアップの .stamp に相当 */}
+      {note.createdAt && !editing && (
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            marginTop: '7px',
+            fontSize: '10.5px',
+            letterSpacing: '.04em',
+            color: 'var(--ink-soft)',
+            fontVariantNumeric: 'tabular-nums',
+            opacity: 0.8,
+          }}
+        >
+          {(() => {
+            const d = note.createdAt.toDate();
+            const p = (n: number) => (n < 10 ? '0' : '') + n;
+            return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+          })()}
+        </div>
+      )}
+
       {/* clamped インジケーター: テキストが 4.5em を超えているときのみ表示 */}
       {isClamped && !expanded && !editing && (
         <span
