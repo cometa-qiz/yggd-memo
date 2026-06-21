@@ -42,6 +42,9 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
   const [draft, setDraft] = useState(note.text);
   const [pos, setPos] = useState({ x: note.x, y: note.y });
   const [isDragging, setIsDragging] = useState(false);
+  const [isClamped, setIsClamped] = useState(false);
+
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragRef = useRef({
@@ -63,6 +66,15 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
       setPos({ x: note.x, y: note.y });
     }
   }, [note.x, note.y]);
+
+  // body の scrollHeight > clientHeight なら clamped（テキストが 4.5em を超える）
+  useEffect(() => {
+    if (editing || expanded || !bodyRef.current) {
+      setIsClamped(false);
+      return;
+    }
+    setIsClamped(bodyRef.current.scrollHeight > bodyRef.current.clientHeight);
+  }, [note.text, editing, expanded]);
 
   // skin と展開状態からクリップパスクラスを決定する
   // collapsed 時: leaf→clip-leaf / cloud→clip-cloud / default→clip-rounded-rect（変形なし）
@@ -169,8 +181,8 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         zIndex: isDragging ? 10 : 1,
         touchAction: 'none',
         pointerEvents: cutMode ? 'none' : undefined,
-        padding: 'var(--card-pad)',
-        minHeight: '74px',
+        padding: expanded ? '18px 20px 18px 20px' : 'var(--card-pad)',
+        minHeight: expanded ? 0 : '74px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -206,8 +218,21 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
 
       {/* テキスト本体: 背景レイヤーより前面（z-index:1）に配置 */}
       <div
+        ref={bodyRef}
         className="relative"
-        style={{ zIndex: 1, color: 'var(--ink)' }}
+        style={{
+          zIndex: 1,
+          color: 'var(--ink)',
+          overflow: 'hidden',
+          maxHeight: editing ? 'none' : expanded ? '60em' : '4.5em',
+          transition: 'max-height .42s cubic-bezier(.16, .84, .44, 1)',
+          WebkitMaskImage: (isClamped && !expanded && !editing)
+            ? 'linear-gradient(180deg, #000 76%, transparent)'
+            : undefined,
+          maskImage: (isClamped && !expanded && !editing)
+            ? 'linear-gradient(180deg, #000 76%, transparent)'
+            : undefined,
+        }}
       >
         {editing ? (
           <textarea
@@ -225,6 +250,27 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
           </p>
         )}
       </div>
+
+      {/* clamped インジケーター: テキストが 4.5em を超えているときのみ表示 */}
+      {isClamped && !expanded && !editing && (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: '6px',
+            transform: 'translateX(-50%)',
+            zIndex: 2,
+            fontSize: '13px',
+            lineHeight: 1,
+            color: 'var(--dusk-soft)',
+            opacity: 0.9,
+            pointerEvents: 'none',
+          }}
+        >
+          ⌄
+        </span>
+      )}
 
       {/* 削除ボタン: 両レイヤーの外側（兄弟要素）に配置 */}
       <button
