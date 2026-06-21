@@ -211,7 +211,7 @@
 
 ### デプロイ設定
 - [x] Firebase CLI を開発依存として導入する（`pnpm add -D firebase-tools`）
-- [ ] `package.json` の `scripts` に以下を追加する
+- [x] `package.json` の `scripts` に以下を追加する
   ```json
   "firebase:login": "firebase login",
   "firebase:init": "firebase init hosting",
