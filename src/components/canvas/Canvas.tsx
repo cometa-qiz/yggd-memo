@@ -101,6 +101,10 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
     cutIds: Set<string>;
   } | null>(null);
 
+  // cutMode をレンダー毎に同期し、イベントハンドラーが常に最新値を参照できるようにする
+  const cutModeRef = useRef(cutMode);
+  cutModeRef.current = cutMode;
+
   const panDragRef = useRef<{
     startPanX: number; startPanY: number;
     startPX: number; startPY: number;
@@ -295,7 +299,7 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
 
     const rect = e.currentTarget.getBoundingClientRect();
 
-    if (cutMode) {
+    if (cutModeRef.current) {
       const { x, y } = toNoteCoords(e.clientX, e.clientY, rect);
       e.currentTarget.setPointerCapture(e.pointerId);
       cutStateRef.current = { startX: x, startY: y, prevX: x, prevY: y, cutIds: new Set() };
@@ -319,7 +323,7 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
 
     const rect = e.currentTarget.getBoundingClientRect();
 
-    if (cutMode) {
+    if (cutModeRef.current) {
       const state = cutStateRef.current;
       if (!state) return;
       const { x, y } = toNoteCoords(e.clientX, e.clientY, rect);
@@ -352,8 +356,9 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
     setConnecting((prev) => prev ? { ...prev, cursorX: x, cursorY: y } : null);
   }
 
-  async function handleCanvasPointerUp() {
-    if (cutMode) {
+  async function handleCanvasPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (cutModeRef.current) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
       cutStateRef.current = null;
       setCutLine(null);
       return;
@@ -372,7 +377,7 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
   }
 
   function handleCanvasPointerLeave() {
-    if (cutMode) {
+    if (cutModeRef.current) {
       cutStateRef.current = null;
       setCutLine(null);
       return;
@@ -385,6 +390,19 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
     }
 
     if (connecting) setConnecting(null);
+  }
+
+  function handleCanvasPointerCancel(e: React.PointerEvent<HTMLDivElement>) {
+    if (cutModeRef.current) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      cutStateRef.current = null;
+      setCutLine(null);
+      return;
+    }
+    if (panDragRef.current) {
+      panDragRef.current = null;
+      setPanDragging(false);
+    }
   }
 
   // ── 切る操作（チップ） ────────────────────────────────────────────
@@ -463,6 +481,7 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}
+      onPointerCancel={handleCanvasPointerCancel}
       onPointerLeave={handleCanvasPointerLeave}
       onClick={handleCanvasClick}
       onTouchStart={handleTouchStart}
