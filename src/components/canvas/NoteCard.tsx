@@ -3,12 +3,6 @@
 import { useState, useEffect, useRef, forwardRef } from 'react';
 import type { Note, BoardSkin } from '@/types';
 
-// スキンごとのカード配色（ロゴ色と対応: 葉=緑 / デフォルト=グレー / 雲=水色）
-const SKIN_CARD: Record<BoardSkin, { bg: string; border: string }> = {
-  leaf:    { bg: 'bg-green-50', border: 'border-green-200' },
-  default: { bg: 'bg-white',    border: 'border-zinc-300'  },
-  cloud:   { bg: 'bg-sky-100',  border: 'border-sky-300'   },
-};
 
 type Props = {
   note: Note;
@@ -192,11 +186,14 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
        * clip-path によって切り抜かれないようにする。
        */}
       <div
-        className={`${clipClass} relative border p-3 shadow-md ${SKIN_CARD[skin].bg} ${
-          isConnectTarget
-            ? 'border-blue-400 ring-2 ring-blue-200'
-            : SKIN_CARD[skin].border
-        }`}
+        className={`${clipClass} relative p-3`}
+        style={{
+          background: 'var(--card-fill)',
+          filter: isConnectTarget
+            ? 'var(--card-filter) drop-shadow(0 0 9px rgba(var(--accent-rgb),.85))'
+            : 'var(--card-filter)',
+          color: 'var(--ink)',
+        }}
       >
         {editing ? (
           <textarea
@@ -205,7 +202,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
             onBlur={handleSave}
             autoFocus
             rows={3}
-            className="w-full resize-none text-sm focus:outline-none"
+            className="w-full resize-none bg-transparent text-sm focus:outline-none"
           />
         ) : (
           <p className="select-none whitespace-pre-wrap break-words text-sm">

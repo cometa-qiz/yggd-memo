@@ -71,12 +71,6 @@ type Props = {
   onRemoveLink: (linkId: string) => Promise<void>;
 };
 
-const SKIN_CANVAS_BG: Record<BoardSkin, string> = {
-  leaf:    'bg-green-50',
-  default: 'bg-gray-50',
-  cloud:   'bg-sky-50',
-};
-
 export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, onAddLink, onRemoveLink }: Props) {
   const [connecting, setConnecting] = useState<ConnectState | null>(null);
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
@@ -458,10 +452,13 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
   return (
     <div
       ref={canvasRef}
-      className={`relative flex-1 overflow-hidden ${SKIN_CANVAS_BG[skin]}`}
+      className={`relative flex-1 overflow-hidden skin-${skin}`}
       style={{
         cursor: cutMode ? 'crosshair' : connecting ? 'crosshair' : panDragging ? 'grabbing' : 'grab',
         touchAction: 'none',
+        backgroundColor: 'var(--field)',
+        backgroundImage: 'var(--canvas-image)',
+        backgroundSize: 'var(--canvas-size)',
       }}
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
@@ -473,6 +470,21 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
+      {/* 環境光グロー（木漏れ日エフェクト） */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: '-160px',
+          right: '-120px',
+          width: '460px',
+          height: '460px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, var(--ambient-1), transparent 68%)',
+          pointerEvents: 'none',
+        }}
+      />
+
       {/* パン＋ズーム変換ラッパー */}
       <div
         style={{

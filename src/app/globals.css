@@ -64,16 +64,15 @@ body {
 /*
  * 形状変形アニメーション設定。
  * clip-path: 0.42s でクラス切り替え時に各形状が補間される。
- * border-color / box-shadow はカードの選択状態ハイライト用にも同時にアニメーション。
- * Tailwind の transition-colors とは競合するため、NoteCard では使用しない。
+ * filter / background はカードのスキン切り替え時にフェードする。
  */
 .clip-leaf,
 .clip-rounded-rect,
 .clip-cloud {
   transition:
-    clip-path     0.42s cubic-bezier(.16, .84, .44, 1),
-    border-color  0.15s ease,
-    box-shadow    0.15s ease;
+    clip-path  0.42s cubic-bezier(.16, .84, .44, 1),
+    filter     0.2s  ease,
+    background 0.3s  ease;
 }
 
 /* タッチデバイス（hover 非対応）では接続ハンドルをデフォルトで表示する */
@@ -81,4 +80,75 @@ body {
   .connect-handle {
     opacity: 0.75 !important;
   }
+}
+
+/* ===== スキン CSS 変数 ===================================================
+ *  葉っぱ（`:root`）がベース。`.skin-default` `.skin-cloud` クラスで上書き。
+ *  スキンクラスはキャンバスラッパー要素に適用し、子要素が継承する。
+ * ======================================================================== */
+
+:root {
+  /* 葉っぱ — ダーク緑 */
+  --ink:         #E7EFE7;
+  --ink-soft:    #8DA593;
+  --paper:       #173524;
+  --paper-edge:  rgba(255,255,255,.06);
+  --field:       #08160D;
+  --field-dot:   rgba(150,210,160,.07);
+  --accent-rgb:  46,167,99;
+  --dusk:        #2EA763;
+  --dusk-soft:   #6CC78F;
+  --thread:      #5E8369;
+  --line:        rgba(170,220,180,.12);
+  --shadow:      rgba(0,0,0,.5);
+  --ambient-1:   rgba(46,167,99,.18);
+  --card-fill:   linear-gradient(150deg, color-mix(in srgb, #173524 84%, #79cf94 16%), #173524 58%);
+  --card-filter: drop-shadow(0 3px 5px rgba(0,0,0,.5)) drop-shadow(0 0 1px rgba(150,210,160,.5));
+  --header-grad: linear-gradient(180deg, #0A4A22, #003A17);
+  --canvas-image: radial-gradient(var(--field-dot) 1.4px, transparent 1.4px);
+  --canvas-size:  26px 26px;
+}
+
+.skin-default {
+  /* デフォルト — ダーク藍 */
+  --ink:         #E8EAF2;
+  --ink-soft:    #9AA0B4;
+  --paper:       #23262F;
+  --paper-edge:  rgba(255,255,255,.06);
+  --field:       #14151A;
+  --field-dot:   rgba(185,193,225,.07);
+  --accent-rgb:  124,140,240;
+  --dusk:        #7C8CF0;
+  --dusk-soft:   #A6B2F6;
+  --thread:      #8089A8;
+  --line:        rgba(190,200,230,.12);
+  --shadow:      rgba(0,0,0,.5);
+  --ambient-1:   rgba(124,140,240,.14);
+  --card-fill:   linear-gradient(150deg, color-mix(in srgb, #23262F 88%, #8c96d8 12%), #23262F 60%);
+  --card-filter: drop-shadow(0 3px 6px rgba(0,0,0,.5));
+  --header-grad: linear-gradient(180deg, #2A2D38, #1A1C24);
+  --canvas-image: radial-gradient(var(--field-dot) 1.4px, transparent 1.4px);
+  --canvas-size:  26px 26px;
+}
+
+.skin-cloud {
+  /* 雲 — ライト青 */
+  --ink:         #33475A;
+  --ink-soft:    #6E869B;
+  --paper:       #FFFFFF;
+  --paper-edge:  rgba(40,80,120,.10);
+  --field:       #9FCBEC;
+  --field-dot:   rgba(40,100,160,.12);
+  --accent-rgb:  42,118,196;
+  --dusk:        #2C7BC6;
+  --dusk-soft:   #7DB4E6;
+  --thread:      #5E97CF;
+  --line:        rgba(30,80,130,.20);
+  --shadow:      rgba(40,85,130,.34);
+  --ambient-1:   rgba(255,255,255,.6);
+  --card-fill:   linear-gradient(180deg, #FFFFFF, #E4F0FB);
+  --card-filter: drop-shadow(0 6px 11px rgba(40,85,130,.34)) drop-shadow(0 0 0.8px rgba(40,95,150,.6));
+  --header-grad: linear-gradient(180deg, #EAF5FF, #D2E8FB);
+  --canvas-image: linear-gradient(180deg, #7FB6E6 0%, #9ECAED 50%, #BCDDF6 100%);
+  --canvas-size:  auto;
 }
