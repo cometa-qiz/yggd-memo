@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import type { Note, Link } from '@/types';
 import { NoteCard } from './NoteCard';
 import { LinkLine } from './LinkLine';
@@ -11,6 +11,8 @@ const CARD_CY = 40;
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3.0;
 const ZOOM_STEP = 0.25;
+/** CSS transition 0.42s より少し長く追従し続ける（ms） */
+const ANIM_DURATION_MS = 470;
 
 // ── ジェスチャー交差判定 ─────────────────────────────────────────
 
@@ -77,6 +79,21 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
   const [cutLine, setCutLine] = useState<CutLineState | null>(null);
   const [panDragging, setPanDragging] = useState(false);
 
+  /** rAF 追従中のカード中心座標（note 座標系）。アニメーション中のみ値が存在する */
+  const [liveCardCenters, setLiveCardCenters] = useState<Map<string, { cx: number; cy: number }>>(
+    () => new Map()
+  );
+
+  // ── refs ─────────────────────────────────────────────────────────
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  // ホイール・ピンチ処理でクロージャーの stale 値を避けるため ref に常時反映
+  const zoomRef = useRef(zoom);
+  const panRef = useRef(pan);
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  useEffect(() => { panRef.current = pan; }, [pan]);
+
   const cutStateRef = useRef<{
     startX: number; startY: number;
     prevX: number; prevY: number;
@@ -88,17 +105,166 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
     startPX: number; startPY: number;
   } | null>(null);
 
+  const pinchRef = useRef<{
+    startDist: number;
+    startZoom: number;
+    startPanX: number;
+    startPanY: number;
+    midX: number;
+    midY: number;
+  } | null>(null);
+
+  // ── カード DOM 要素管理（rAF 追従用） ────────────────────────────
+
+  /** noteId → NoteCard 外側 div の DOM 要素（コールバック ref で格納） */
+  const cardElMapRef = useRef<Map<string, HTMLDivElement | null>>(new Map());
+
+  /** noteId → clip-path アニメーション終了予定時刻（performance.now ベース） */
+  const animEndTimesRef = useRef<Map<string, number>>(new Map());
+  /** 走行中の rAF ID（null = 停止中） */
+  const rafIdRef = useRef<number | null>(null);
+  /** scheduleTick 関数の安定参照（useCallback + useEffect で登録） */
+  const scheduleTickRef = useRef<() => void>(null!);
+
+  /**
+   * rAF ループ本体。マウント時に scheduleTickRef へ登録する。
+   * React の状態変化を経由せず DOM を直接読むため、
+   * フレームレートに追従した滑らかな端点更新が可能。
+   */
+  useEffect(() => {
+    scheduleTickRef.current = () => {
+      rafIdRef.current = requestAnimationFrame(() => {
+        rafIdRef.current = null;
+        const canvasEl = canvasRef.current;
+        if (!canvasEl) return;
+
+        const now = performance.now();
+        const canvasRect = canvasEl.getBoundingClientRect();
+        const px = panRef.current.x;
+        const py = panRef.current.y;
+        const z = zoomRef.current;
+
+        const next = new Map<string, { cx: number; cy: number }>();
+        let anyActive = false;
+
+        for (const [noteId, endTime] of animEndTimesRef.current) {
+          if (now <= endTime) {
+            anyActive = true;
+            const cardEl = cardElMapRef.current.get(noteId);
+            if (cardEl) {
+              const r = cardEl.getBoundingClientRect();
+              // screen 座標 → note 座標系に変換
+              next.set(noteId, {
+                cx: (r.left + r.width  / 2 - canvasRect.left - px) / z,
+                cy: (r.top  + r.height / 2 - canvasRect.top  - py) / z,
+              });
+            }
+          } else {
+            animEndTimesRef.current.delete(noteId);
+          }
+        }
+
+        setLiveCardCenters(next);
+        if (anyActive) scheduleTickRef.current();
+      });
+    };
+  }, []); // マウント時のみ登録。参照するすべての値は ref か安定 setter
+
+  /**
+   * NoteCard から clip-path アニメーション開始の通知を受け rAF ループを起動する。
+   * useCallback で安定化し、performance.now() をレンダー外で呼び出す。
+   */
+  const handleExpandChange = useCallback((noteId: string) => {
+    animEndTimesRef.current.set(noteId, performance.now() + ANIM_DURATION_MS);
+    if (rafIdRef.current === null) {
+      scheduleTickRef.current();
+    }
+  }, []);
+
+  // ── ホイールズーム（passive: false が必要なため命令的に追加） ──
+
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      const curZoom = zoomRef.current;
+      const curPan = panRef.current;
+
+      // 指数スケールでスムーズなズーム（マウスホイール・トラックパッド両対応）
+      const factor = Math.exp(-e.deltaY * 0.001);
+      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, parseFloat((curZoom * factor).toFixed(3))));
+      const scale = newZoom / curZoom;
+
+      // カーソル位置を固定したままパンを補正
+      setZoom(newZoom);
+      setPan({ x: cx - (cx - curPan.x) * scale, y: cy - (cy - curPan.y) * scale });
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []); // マウント時のみ。zoom/pan は ref 経由で参照
+
+  // ── ピンチズーム（touch イベント） ───────────────────────────────
+
+  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    if (e.touches.length !== 2) {
+      pinchRef.current = null;
+      return;
+    }
+    // 2本指検出: パンドラッグを中断してピンチ開始
+    if (panDragRef.current) {
+      panDragRef.current = null;
+      setPanDragging(false);
+    }
+    const [t1, t2] = [e.touches[0], e.touches[1]];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    const midX = (t1.clientX + t2.clientX) / 2 - rect.left;
+    const midY = (t1.clientY + t2.clientY) / 2 - rect.top;
+    pinchRef.current = {
+      startDist: dist,
+      startZoom: zoomRef.current,
+      startPanX: panRef.current.x,
+      startPanY: panRef.current.y,
+      midX,
+      midY,
+    };
+  }
+
+  function handleTouchMove(e: React.TouchEvent<HTMLDivElement>) {
+    const pinch = pinchRef.current;
+    if (!pinch || e.touches.length !== 2) return;
+
+    const [t1, t2] = [e.touches[0], e.touches[1]];
+    const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinch.startZoom * (dist / pinch.startDist)));
+    const scale = newZoom / pinch.startZoom;
+
+    // ピンチ中心点（画面上）を固定してパン補正
+    const { midX, midY, startPanX, startPanY } = pinch;
+    setZoom(parseFloat(newZoom.toFixed(3)));
+    setPan({ x: midX - (midX - startPanX) * scale, y: midY - (midY - startPanY) * scale });
+  }
+
+  function handleTouchEnd() {
+    pinchRef.current = null;
+  }
+
+  // ── 接続操作 ────────────────────────────────────────────────────
+
   const notesById = new Map(notes.map((n) => [n.id, n]));
 
-  /** スクリーン座標（キャンバス相対）をノート座標系に変換 */
   function toNoteCoords(clientX: number, clientY: number, rect: DOMRect) {
     return {
       x: (clientX - rect.left - pan.x) / zoom,
       y: (clientY - rect.top - pan.y) / zoom,
     };
   }
-
-  // ── 接続操作 ────────────────────────────────────────────────────
 
   function handleConnectStart(fromId: string) {
     if (cutMode) return;
@@ -123,6 +289,9 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
   // ── キャンバスのポインターイベント ─────────────────────────────
 
   function handleCanvasPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    // ピンチ中はポインターイベントを無視（touch イベントが主導）
+    if (pinchRef.current) return;
+
     const rect = e.currentTarget.getBoundingClientRect();
 
     if (cutMode) {
@@ -133,7 +302,6 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
       return;
     }
 
-    // NoteCard 以外の背景クリックならパン開始
     const target = e.target as Element;
     if (target.closest('[data-note-card]')) return;
 
@@ -146,9 +314,10 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
   }
 
   function handleCanvasPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (pinchRef.current) return;
+
     const rect = e.currentTarget.getBoundingClientRect();
 
-    // 切るモード：ジェスチャー追跡
     if (cutMode) {
       const state = cutStateRef.current;
       if (!state) return;
@@ -165,23 +334,18 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
           onRemoveLink(link.id).catch(console.error);
         }
       }
-
       state.prevX = x;
       state.prevY = y;
       setCutLine({ x1: startX, y1: startY, x2: x, y2: y });
       return;
     }
 
-    // パンドラッグ
     const panDrag = panDragRef.current;
     if (panDrag) {
-      const dx = e.clientX - panDrag.startPX;
-      const dy = e.clientY - panDrag.startPY;
-      setPan({ x: panDrag.startPanX + dx, y: panDrag.startPanY + dy });
+      setPan({ x: panDrag.startPanX + (e.clientX - panDrag.startPX), y: panDrag.startPanY + (e.clientY - panDrag.startPY) });
       return;
     }
 
-    // 接続カーソル追跡
     if (!connecting) return;
     const { x, y } = toNoteCoords(e.clientX, e.clientY, rect);
     setConnecting((prev) => prev ? { ...prev, cursorX: x, cursorY: y } : null);
@@ -233,14 +397,35 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
     setSelectedLinkId(null);
   }
 
-  // ── ズーム・パン操作 ─────────────────────────────────────────────
+  // ── ズーム・パン操作（ボタン） ───────────────────────────────────
 
   function handleZoomIn() {
-    setZoom((prev) => Math.min(MAX_ZOOM, parseFloat((prev + ZOOM_STEP).toFixed(2))));
+    setZoom((prev) => {
+      const next = Math.min(MAX_ZOOM, parseFloat((prev + ZOOM_STEP).toFixed(2)));
+      // 画面中心を固定してパン補正
+      const el = canvasRef.current;
+      if (el) {
+        const cx = el.clientWidth / 2;
+        const cy = el.clientHeight / 2;
+        const scale = next / prev;
+        setPan((p) => ({ x: cx - (cx - p.x) * scale, y: cy - (cy - p.y) * scale }));
+      }
+      return next;
+    });
   }
 
   function handleZoomOut() {
-    setZoom((prev) => Math.max(MIN_ZOOM, parseFloat((prev - ZOOM_STEP).toFixed(2))));
+    setZoom((prev) => {
+      const next = Math.max(MIN_ZOOM, parseFloat((prev - ZOOM_STEP).toFixed(2)));
+      const el = canvasRef.current;
+      if (el) {
+        const cx = el.clientWidth / 2;
+        const cy = el.clientHeight / 2;
+        const scale = next / prev;
+        setPan((p) => ({ x: cx - (cx - p.x) * scale, y: cy - (cy - p.y) * scale }));
+      }
+      return next;
+    });
   }
 
   function handleCenter() {
@@ -265,18 +450,23 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
 
   return (
     <div
+      ref={canvasRef}
       className="relative flex-1 overflow-hidden bg-gray-50"
       style={{
         cursor: cutMode ? 'crosshair' : connecting ? 'crosshair' : panDragging ? 'grabbing' : 'grab',
-        touchAction: cutMode || connecting || panDragging ? 'none' : 'none',
+        touchAction: 'none',
       }}
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}
       onPointerLeave={handleCanvasPointerLeave}
       onClick={handleCanvasClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
-      {/* パン＋ズーム変換ラッパー（translate → scale の順：右から適用） */}
+      {/* パン＋ズーム変換ラッパー */}
       <div
         style={{
           position: 'absolute',
@@ -293,13 +483,17 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
             const a = notesById.get(link.a);
             const b = notesById.get(link.b);
             if (!a || !b) return null;
+            // アニメーション追従中は rAF で更新した実座標を使い、
+            // それ以外は静的オフセットにフォールバックする
+            const ac = liveCardCenters.get(link.a);
+            const bc = liveCardCenters.get(link.b);
             return (
               <LinkLine
                 key={link.id}
-                x1={a.x + CARD_CX}
-                y1={a.y + CARD_CY}
-                x2={b.x + CARD_CX}
-                y2={b.y + CARD_CY}
+                x1={ac?.cx ?? a.x + CARD_CX}
+                y1={ac?.cy ?? a.y + CARD_CY}
+                x2={bc?.cx ?? b.x + CARD_CX}
+                y2={bc?.cy ?? b.y + CARD_CY}
                 selected={selectedLinkId === link.id}
                 onSelect={() => setSelectedLinkId(link.id)}
               />
@@ -349,6 +543,7 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
         {notes.map((note) => (
           <NoteCard
             key={note.id}
+            ref={(el) => { cardElMapRef.current.set(note.id, el); }}
             note={note}
             zoom={zoom}
             cutMode={cutMode}
@@ -359,6 +554,7 @@ export function Canvas({ notes, links, onEdit, onRemove, onMove, onAddLink, onRe
             onConnectEnter={handleConnectEnter}
             onConnectLeave={handleConnectLeave}
             isConnectTarget={connecting?.targetId === note.id}
+            onExpandChange={handleExpandChange}
           />
         ))}
       </div>

@@ -15,7 +15,7 @@ export default function Home() {
   const { notes, addNote, editNote, removeNote, moveNote } = useNotes(currentBoard?.id ?? null);
   const { links, addLink, removeLink } = useLinks(currentBoard?.id ?? null);
 
-  async function handleAddNote(text: string, _x: number, _y: number): Promise<string> {
+  async function handleAddNote(text: string): Promise<string> {
     const { x, y } = findEmptyPosition(DEFAULT_X, DEFAULT_Y, notes);
     return addNote(text, x, y);
   }

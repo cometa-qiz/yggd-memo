@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef } from 'react';
 import type { Note } from '@/types';
 
 type Props = {
@@ -14,12 +14,14 @@ type Props = {
   onConnectEnter: (noteId: string) => void;
   onConnectLeave: (noteId: string) => void;
   isConnectTarget: boolean;
+  /** clip-path アニメーション開始を親（Canvas）に通知するコールバック */
+  onExpandChange?: (noteId: string) => void;
 };
 
 const LONG_PRESS_MS = 500;
 const DRAG_THRESHOLD = 5;
 
-export function NoteCard({
+export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
   note,
   zoom = 1,
   cutMode = false,
@@ -30,15 +32,15 @@ export function NoteCard({
   onConnectEnter,
   onConnectLeave,
   isConnectTarget,
-}: Props) {
+  onExpandChange,
+}, ref) {
   const [editing, setEditing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState(note.text);
   const [pos, setPos] = useState({ x: note.x, y: note.y });
   const [isDragging, setIsDragging] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // started: pointerdown がこのカード上で起きたかのフラグ
-  // （接続モード中に pointermove がバブルしてきても誤ドラッグしないようにする）
   const dragRef = useRef({
     started: false,
     active: false,
@@ -47,12 +49,27 @@ export function NoteCard({
     startX: 0,
     startY: 0,
   });
+  const preventClickRef = useRef(false);
+
+  // コールバックを ref に保持して stale closure を避ける
+  const onExpandChangeRef = useRef(onExpandChange);
+  useEffect(() => { onExpandChangeRef.current = onExpandChange; });
 
   useEffect(() => {
     if (!dragRef.current.active) {
       setPos({ x: note.x, y: note.y });
     }
   }, [note.x, note.y]);
+
+  // clip class が変わるたびにアニメーション開始を通知する
+  const clipClass = editing || expanded ? 'clip-rounded-rect' : 'clip-leaf';
+  const prevClipClassRef = useRef(clipClass);
+  useEffect(() => {
+    if (clipClass !== prevClipClassRef.current) {
+      prevClipClassRef.current = clipClass;
+      onExpandChangeRef.current?.(note.id);
+    }
+  });
 
   function cancelLongPress() {
     if (timerRef.current) {
@@ -82,7 +99,6 @@ export function NoteCard({
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    // started でない場合は接続モード中のバブルイベントなので無視
     if (editing || !dragRef.current.started) return;
     const dx = e.clientX - dragRef.current.startPX;
     const dy = e.clientY - dragRef.current.startPY;
@@ -94,7 +110,6 @@ export function NoteCard({
     }
 
     if (dragRef.current.active) {
-      // スクリーン座標の差分をノート座標系に変換（zoom > 1 のとき scale 分だけ補正）
       setPos({ x: dragRef.current.startX + dx / zoom, y: dragRef.current.startY + dy / zoom });
     }
   }
@@ -110,8 +125,19 @@ export function NoteCard({
       dragRef.current.active = false;
       setIsDragging(false);
       setPos({ x: finalX, y: finalY });
+      preventClickRef.current = true;
       await onMove(note.id, finalX, finalY);
     }
+  }
+
+  function handleClick(e: React.MouseEvent<HTMLDivElement>) {
+    e.stopPropagation();
+    if (preventClickRef.current) {
+      preventClickRef.current = false;
+      return;
+    }
+    if (editing) return;
+    setExpanded((prev) => !prev);
   }
 
   async function handleSave() {
@@ -129,6 +155,7 @@ export function NoteCard({
 
   return (
     <div
+      ref={ref}
       style={{
         position: 'absolute',
         left: pos.x,
@@ -136,7 +163,6 @@ export function NoteCard({
         cursor: cutMode ? 'default' : isDragging ? 'grabbing' : 'grab',
         zIndex: isDragging ? 10 : 1,
         touchAction: 'none',
-        // 切るモード中はカードへの全ポインターイベントを無効化し、背後の線をクリック可能にする
         pointerEvents: cutMode ? 'none' : undefined,
       }}
       className="group min-w-[120px] max-w-[200px]"
@@ -147,36 +173,20 @@ export function NoteCard({
       onPointerCancel={handlePointerUp}
       onPointerEnter={() => onConnectEnter(note.id)}
       onPointerLeave={() => onConnectLeave(note.id)}
-      onClick={(e) => e.stopPropagation()}
+      onClick={handleClick}
     >
+      {/*
+       * カード本体: clipClass で葉↔角丸四角をアニメーション。
+       * 削除ボタン・接続ハンドルはこの要素の外（兄弟要素）に置き、
+       * clip-path によって切り抜かれないようにする。
+       */}
       <div
-        className={`relative rounded-lg border p-3 shadow-md bg-white transition-colors ${
+        className={`${clipClass} relative border p-3 shadow-md bg-white ${
           isConnectTarget
             ? 'border-blue-400 ring-2 ring-blue-200'
             : 'border-gray-200'
         }`}
       >
-        <button
-          onClick={handleRemove}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white hover:bg-red-600"
-          aria-label="メモを削除"
-        >
-          ✕
-        </button>
-
-        {/* つなぐハンドル：切るモード中は非表示、それ以外はホバー時のみ表示（右辺中央） */}
-        {!cutMode && (
-          <div
-            className="absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              onConnectStart(note.id);
-            }}
-            aria-label="つなぐ"
-          />
-        )}
-
         {editing ? (
           <textarea
             value={draft}
@@ -192,6 +202,29 @@ export function NoteCard({
           </p>
         )}
       </div>
+
+      {/* 削除ボタン: clip-path の外側（外側 div の直接子）に配置 */}
+      <button
+        onClick={(e) => { e.stopPropagation(); handleRemove(e); }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white hover:bg-red-600"
+        aria-label="メモを削除"
+      >
+        ✕
+      </button>
+
+      {/* 接続ハンドル: clip-path の外側（外側 div の直接子）に配置 */}
+      {!cutMode && (
+        <div
+          className="absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            onConnectStart(note.id);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="つなぐ"
+        />
+      )}
     </div>
   );
-}
+});
