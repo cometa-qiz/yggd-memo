@@ -222,7 +222,7 @@
 - [x] `firebase.json` の `public` が `"out"` になっていることを確認する
 
 ### デプロイ実行
-- [ ] `pnpm build` でビルドが成功することを確認する
+- [x] `pnpm build` でビルドが成功することを確認する
 - [ ] `pnpm deploy` でデプロイする
 
 ### ✅ 完了確認
