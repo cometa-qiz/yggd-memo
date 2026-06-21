@@ -108,6 +108,7 @@ body {
   --line:        rgba(170,220,180,.12);
   --shadow:      rgba(0,0,0,.5);
   --ambient-1:   rgba(46,167,99,.18);
+  --card-pad:    15px 42px 16px 30px;
   --card-fill:   linear-gradient(150deg, #274E36, #173524 58%);
   --card-filter: drop-shadow(0 3px 5px rgba(0,0,0,.5)) drop-shadow(0 0 1px rgba(150,210,160,.5));
   --header-grad: linear-gradient(180deg, #0A4A22, #003A17);
@@ -130,6 +131,7 @@ body {
   --line:        rgba(190,200,230,.12);
   --shadow:      rgba(0,0,0,.5);
   --ambient-1:   rgba(124,140,240,.14);
+  --card-pad:    14px 18px 15px 18px;
   --card-fill:   linear-gradient(150deg, #303343, #23262F 60%);
   --card-filter: drop-shadow(0 3px 6px rgba(0,0,0,.5));
   --header-grad: linear-gradient(180deg, #2A2D38, #1A1C24);
@@ -152,6 +154,7 @@ body {
   --line:        rgba(30,80,130,.20);
   --shadow:      rgba(40,85,130,.34);
   --ambient-1:   rgba(255,255,255,.6);
+  --card-pad:    19px 32px 20px 32px;
   --card-fill:   linear-gradient(180deg, #FFFFFF, #E4F0FB);
   --card-filter: drop-shadow(0 6px 11px rgba(40,85,130,.34)) drop-shadow(0 0 0.8px rgba(40,95,150,.6));
   --header-grad: linear-gradient(180deg, #EAF5FF, #D2E8FB);

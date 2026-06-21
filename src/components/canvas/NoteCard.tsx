@@ -169,6 +169,12 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         zIndex: isDragging ? 10 : 1,
         touchAction: 'none',
         pointerEvents: cutMode ? 'none' : undefined,
+        padding: 'var(--card-pad)',
+        minHeight: '74px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        boxSizing: 'border-box',
       }}
       className="group relative min-w-[150px] max-w-[250px]"
       data-note-card="true"
@@ -200,7 +206,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
 
       {/* テキスト本体: 背景レイヤーより前面（z-index:1）に配置 */}
       <div
-        className="relative p-3"
+        className="relative"
         style={{ zIndex: 1, color: 'var(--ink)' }}
       >
         {editing ? (
