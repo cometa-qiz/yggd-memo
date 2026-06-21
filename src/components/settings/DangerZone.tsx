@@ -5,14 +5,9 @@ import { useBoardsContext } from '@/contexts/BoardsContext';
 import { useAuth } from '@/hooks/useAuth';
 import { deactivateAllNotesAndLinks } from '@/lib/firestore';
 
-type Props = {
-  /** 「サインアウト」ボタンが押されたときのハンドラ（次タスクで接続） */
-  onSignOut: () => void;
-};
-
-export function DangerZone({ onSignOut }: Props) {
+export function DangerZone() {
   const { currentBoard } = useBoardsContext();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -61,7 +56,7 @@ export function DangerZone({ onSignOut }: Props) {
             アカウントからサインアウトします。
           </p>
           <button
-            onClick={onSignOut}
+            onClick={() => signOut()}
             className="mt-1 text-sm px-4 py-2 rounded-xl border border-zinc-300 text-zinc-700 hover:bg-zinc-50 transition-colors"
           >
             サインアウト

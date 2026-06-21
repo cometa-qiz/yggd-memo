@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { useBoardsContext } from '@/contexts/BoardsContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { BoardSkin } from '@/types';
@@ -100,12 +101,19 @@ export function Header() {
                 {user.displayName}
               </p>
             )}
+            <Link
+              href="/settings"
+              onClick={() => setMenuOpen(false)}
+              className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+            >
+              設定
+            </Link>
             <button
               onClick={() => {
                 signOut();
                 setMenuOpen(false);
               }}
-              className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors border-t border-zinc-50"
             >
               サインアウト
             </button>
