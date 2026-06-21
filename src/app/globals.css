@@ -75,3 +75,10 @@ body {
     border-color  0.15s ease,
     box-shadow    0.15s ease;
 }
+
+/* タッチデバイス（hover 非対応）では接続ハンドルをデフォルトで表示する */
+@media (hover: none) {
+  .connect-handle {
+    opacity: 0.75 !important;
+  }
+}

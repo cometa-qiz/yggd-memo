@@ -227,7 +227,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
       {/* 接続ハンドル: clip-path の外側（外側 div の直接子）に配置 */}
       {!cutMode && (
         <div
-          className="absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
+          className="connect-handle absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
           onPointerDown={(e) => {
             e.stopPropagation();
             onConnectStart(note.id);
