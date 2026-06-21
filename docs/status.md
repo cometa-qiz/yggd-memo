@@ -217,18 +217,18 @@
   "firebase:init": "firebase init hosting",
   "deploy": "firebase deploy --only hosting"
   ```
-- [ ] `pnpm firebase:login` でFirebaseにサインインする
+- [x] `pnpm firebase:login` でFirebaseにサインインする
 - [x] `pnpm firebase:init` を実行し `out` ディレクトリを指定する
 - [x] `firebase.json` の `public` が `"out"` になっていることを確認する
 
 ### デプロイ実行
 - [x] `pnpm build` でビルドが成功することを確認する
-- [ ] `pnpm deploy` でデプロイする
+- [x] `pnpm deploy` でデプロイする
 
 ### ✅ 完了確認
-- [ ] 公開URLにアクセスしてアプリが表示される
-- [ ] 公開URL上でGoogleサインインが成功する
-- [ ] 公開URL上でメモの追加・つなぐ・削除がFirestoreに反映される
+- [x] 公開URLにアクセスしてアプリが表示される
+- [x] 公開URL上でGoogleサインインが成功する
+- [x] 公開URL上でメモの追加・つなぐ・削除がFirestoreに反映される
 - [ ] スマホのブラウザからも公開URLにアクセスできる
 
 ---
