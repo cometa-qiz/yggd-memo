@@ -181,12 +181,6 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         zIndex: isDragging ? 10 : 1,
         touchAction: 'none',
         pointerEvents: cutMode ? 'none' : undefined,
-        padding: expanded ? '18px 20px 18px 20px' : 'var(--card-pad)',
-        minHeight: expanded ? 0 : '74px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        boxSizing: 'border-box',
       }}
       className="group relative min-w-[150px] max-w-[250px]"
       data-note-card="true"
@@ -199,102 +193,117 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
       onClick={handleClick}
     >
       {/*
-       * カード背景レイヤー（.leaf）: clip-path＋グラデーションのみ。
-       * absolute inset-0 で親の全域を覆い、z-index:0 でテキストの背面に置く。
-       * filter:drop-shadow はこのレイヤーに掛けることで clip 外に影が出る。
+       * クリップラッパー: clip-path + filter をここに集約する。
+       * CSS の描画順序上、clip-path でクリップした後に filter が適用されるため、
+       * drop-shadow はクリップ外に描画される。テキストはラッパー内に収まり
+       * カードの有機的な形からはみ出せない。
+       * 削除ボタン・接続ハンドルは兄弟要素として外に置き、クリップ対象から外す。
        */}
       <div
         className={clipClass}
         style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          background: 'var(--card-fill)',
+          position: 'relative',
+          padding: expanded ? '18px 20px 18px 20px' : 'var(--card-pad)',
+          minHeight: expanded ? undefined : '74px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          boxSizing: 'border-box',
           filter: isConnectTarget
             ? 'var(--card-filter) drop-shadow(0 0 9px rgba(var(--accent-rgb),.85))'
             : 'var(--card-filter)',
         }}
-      />
-
-      {/* テキスト本体: 背景レイヤーより前面（z-index:1）に配置 */}
-      <div
-        ref={bodyRef}
-        className="relative"
-        style={{
-          zIndex: 1,
-          color: 'var(--ink)',
-          overflow: 'hidden',
-          maxHeight: editing ? 'none' : expanded ? '60em' : '4.5em',
-          transition: 'max-height .42s cubic-bezier(.16, .84, .44, 1)',
-          WebkitMaskImage: (isClamped && !expanded && !editing)
-            ? 'linear-gradient(180deg, #000 76%, transparent)'
-            : undefined,
-          maskImage: (isClamped && !expanded && !editing)
-            ? 'linear-gradient(180deg, #000 76%, transparent)'
-            : undefined,
-        }}
       >
-        {editing ? (
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={handleSave}
-            autoFocus
-            rows={3}
-            className="w-full resize-none bg-transparent text-sm focus:outline-none"
-            style={{ color: 'var(--ink)' }}
-          />
-        ) : (
-          <p className="select-none whitespace-pre-wrap break-words text-sm">
-            {note.text}
-          </p>
+        {/* 背景グラデーション: クリップラッパー全域を覆う */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            background: 'var(--card-fill)',
+          }}
+        />
+
+        {/* テキスト本体 */}
+        <div
+          ref={bodyRef}
+          className="relative"
+          style={{
+            zIndex: 1,
+            color: 'var(--ink)',
+            overflow: 'hidden',
+            maxHeight: editing ? 'none' : expanded ? '60em' : '4.5em',
+            transition: 'max-height .42s cubic-bezier(.16, .84, .44, 1)',
+            WebkitMaskImage: (isClamped && !expanded && !editing)
+              ? 'linear-gradient(180deg, #000 76%, transparent)'
+              : undefined,
+            maskImage: (isClamped && !expanded && !editing)
+              ? 'linear-gradient(180deg, #000 76%, transparent)'
+              : undefined,
+          }}
+        >
+          {editing ? (
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={handleSave}
+              autoFocus
+              rows={3}
+              className="w-full resize-none bg-transparent text-sm focus:outline-none"
+              style={{ color: 'var(--ink)' }}
+            />
+          ) : (
+            <p className="select-none whitespace-pre-wrap break-words text-sm">
+              {note.text}
+            </p>
+          )}
+        </div>
+
+        {/* タイムスタンプ: body の兄弟として配置。モックアップの .stamp に相当 */}
+        {note.createdAt && !editing && (
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              marginTop: '7px',
+              fontSize: '10.5px',
+              letterSpacing: '.04em',
+              color: 'var(--ink-soft)',
+              fontVariantNumeric: 'tabular-nums',
+              opacity: 0.8,
+            }}
+          >
+            {(() => {
+              const d = note.createdAt.toDate();
+              const p = (n: number) => (n < 10 ? '0' : '') + n;
+              return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+            })()}
+          </div>
+        )}
+
+        {/* clamped インジケーター */}
+        {isClamped && !expanded && !editing && (
+          <span
+            aria-hidden
+            style={{
+              position: 'absolute',
+              left: '50%',
+              bottom: '6px',
+              transform: 'translateX(-50%)',
+              zIndex: 2,
+              fontSize: '13px',
+              lineHeight: 1,
+              color: 'var(--dusk-soft)',
+              opacity: 0.9,
+              pointerEvents: 'none',
+            }}
+          >
+            ⌄
+          </span>
         )}
       </div>
 
-      {/* タイムスタンプ: body の外側（兄弟）に配置。モックアップの .stamp に相当 */}
-      {note.createdAt && !editing && (
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            marginTop: '7px',
-            fontSize: '10.5px',
-            letterSpacing: '.04em',
-            color: 'var(--ink-soft)',
-            fontVariantNumeric: 'tabular-nums',
-            opacity: 0.8,
-          }}
-        >
-          {(() => {
-            const d = note.createdAt.toDate();
-            const p = (n: number) => (n < 10 ? '0' : '') + n;
-            return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
-          })()}
-        </div>
-      )}
-
-      {/* clamped インジケーター: テキストが 4.5em を超えているときのみ表示 */}
-      {isClamped && !expanded && !editing && (
-        <span
-          aria-hidden
-          style={{
-            position: 'absolute',
-            left: '50%',
-            bottom: '6px',
-            transform: 'translateX(-50%)',
-            zIndex: 2,
-            fontSize: '13px',
-            lineHeight: 1,
-            color: 'var(--dusk-soft)',
-            opacity: 0.9,
-            pointerEvents: 'none',
-          }}
-        >
-          ⌄
-        </span>
-      )}
-
-      {/* 削除ボタン: 両レイヤーの外側（兄弟要素）に配置 */}
+      {/* 削除ボタン: クリップラッパー外（クリップされない） */}
       <button
         onClick={(e) => { e.stopPropagation(); handleRemove(e); }}
         onPointerDown={(e) => e.stopPropagation()}
@@ -304,7 +313,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         ✕
       </button>
 
-      {/* 接続ハンドル: clip-path の外側（外側 div の直接子）に配置 */}
+      {/* 接続ハンドル: クリップラッパー外（クリップされない） */}
       {!cutMode && (
         <div
           className="connect-handle absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
