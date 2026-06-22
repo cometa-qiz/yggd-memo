@@ -20,6 +20,9 @@ const zenMincho = Zen_Old_Mincho({
 export const metadata: Metadata = {
   title: "Yggd-memo",
   description: "メモをつなげて、考えを整理する",
+  icons: {
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+  },
 };
 
 export default function RootLayout({
