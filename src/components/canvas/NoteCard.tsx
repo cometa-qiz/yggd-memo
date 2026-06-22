@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, forwardRef } from 'react';
+import { useState, useEffect, useRef, useCallback, forwardRef } from 'react';
 import type { Note, BoardSkin } from '@/types';
 
 
@@ -45,6 +45,19 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
   const [isClamped, setIsClamped] = useState(false);
 
   const bodyRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // forwarded ref (Canvas の callback ref) を常に最新値として保持し、
+  // assignRefs が stable callback のまま最新の ref を呼べるようにする
+  const latestRefRef = useRef(ref);
+  latestRefRef.current = ref;
+
+  const assignRefs = useCallback((el: HTMLDivElement | null) => {
+    containerRef.current = el;
+    const r = latestRefRef.current;
+    if (typeof r === 'function') r(el);
+    else if (r) (r as React.MutableRefObject<HTMLDivElement | null>).current = el;
+  }, []);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragRef = useRef({
@@ -66,6 +79,18 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
       setPos({ x: note.x, y: note.y });
     }
   }, [note.x, note.y]);
+
+  // 展開中に外側をクリック（PointerDown）したら収納する
+  useEffect(() => {
+    if (!expanded) return;
+    const handleOutside = (e: PointerEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setExpanded(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutside);
+    return () => document.removeEventListener('pointerdown', handleOutside);
+  }, [expanded]);
 
   // body の scrollHeight > clientHeight なら clamped（テキストが 4.5em を超える）
   useEffect(() => {
@@ -172,7 +197,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
 
   return (
     <div
-      ref={ref}
+      ref={assignRefs}
       style={{
         position: 'absolute',
         left: pos.x,
@@ -180,10 +205,12 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         cursor: cutMode ? 'default' : isDragging ? 'grabbing' : 'grab',
         zIndex: isDragging ? 10 : 1,
         touchAction: 'none',
+        userSelect: 'none',
         pointerEvents: cutMode ? 'none' : undefined,
       }}
       className="group relative min-w-[150px] max-w-[250px]"
       data-note-card="true"
+      data-note-id={note.id}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -303,15 +330,17 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         )}
       </div>
 
-      {/* 削除ボタン: クリップラッパー外（クリップされない） */}
-      <button
-        onClick={(e) => { e.stopPropagation(); handleRemove(e); }}
-        onPointerDown={(e) => e.stopPropagation()}
-        className="absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white hover:bg-red-600"
-        aria-label="メモを削除"
-      >
-        ✕
-      </button>
+      {/* 削除ボタン: 展開（選択）中のみ表示 */}
+      {expanded && (
+        <button
+          onClick={(e) => { e.stopPropagation(); handleRemove(e); }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white hover:bg-red-600"
+          aria-label="メモを削除"
+        >
+          ✕
+        </button>
+      )}
 
       {/* 接続ハンドル: クリップラッパー外（クリップされない） */}
       {!cutMode && (

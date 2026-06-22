@@ -3,20 +3,27 @@
 import { useBoardsContext } from '@/contexts/BoardsContext';
 import { useNotes } from '@/hooks/useNotes';
 import { useLinks } from '@/hooks/useLinks';
+import { useCanvasView } from '@/hooks/useCanvasView';
 import { NoteInput } from '@/components/layout/NoteInput';
 import { Canvas } from '@/components/canvas/Canvas';
 import { findEmptyPosition } from '@/utils/positionUtils';
 
-const DEFAULT_X = 20;
-const DEFAULT_Y = 20;
+// NoteCard の視覚的な中心オフセット（Canvas.tsx の CARD_CX / CARD_CY と同値）
+const CARD_CX = 100;
+const CARD_CY = 40;
 
 export default function Home() {
   const { currentBoard, loading: boardLoading } = useBoardsContext();
   const { notes, addNote, editNote, removeNote, moveNote } = useNotes(currentBoard?.id ?? null);
   const { links, addLink, removeLink } = useLinks(currentBoard?.id ?? null);
+  const view = useCanvasView();
 
   async function handleAddNote(text: string): Promise<string> {
-    const { x, y } = findEmptyPosition(DEFAULT_X, DEFAULT_Y, notes);
+    // 現在の表示領域の中心をワールド座標で取得し、カードが画面中央付近に出るよう配置する
+    const center = view.viewportCenterWorld();
+    const desiredX = Math.max(0, Math.round(center.x - CARD_CX));
+    const desiredY = Math.max(0, Math.round(center.y - CARD_CY));
+    const { x, y } = findEmptyPosition(desiredX, desiredY, notes);
     return addNote(text, x, y);
   }
 
@@ -32,6 +39,7 @@ export default function Home() {
         notes={notes}
         links={links}
         skin={currentBoard?.skin ?? 'leaf'}
+        view={view}
         onEdit={editNote}
         onRemove={removeNote}
         onMove={handleMoveNote}

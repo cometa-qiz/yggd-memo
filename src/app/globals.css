@@ -8,8 +8,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--gothic);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +21,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--gothic), "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
 }
 
 /* ── NoteCard の形状定義 ──────────────────────────────────────────
@@ -88,6 +87,15 @@ body {
   }
 }
 
+/* キャンバスコントロールのボタン hover（CSS変数でスキン追従） */
+.canvas-ctrl-btn:hover:not(:disabled) {
+  background: var(--hover);
+}
+.canvas-ctrl-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* ===== スキン CSS 変数 ===================================================
  *  葉っぱ（`:root`）がベース。`.skin-default` `.skin-cloud` クラスで上書き。
  *  スキンクラスはキャンバスラッパー要素に適用し、子要素が継承する。
@@ -109,11 +117,15 @@ body {
   --shadow:      rgba(0,0,0,.5);
   --ambient-1:   rgba(46,167,99,.18);
   --card-pad:    22px 42px 16px 52px;
-  --card-fill:   linear-gradient(150deg, #274E36, #173524 58%);
+  --card-fill:   linear-gradient(150deg, color-mix(in srgb, #173524 84%, #79cf94 16%), #173524 58%);
   --card-filter: drop-shadow(0 3px 5px rgba(0,0,0,.5)) drop-shadow(0 0 1px rgba(150,210,160,.5));
   --header-grad: linear-gradient(180deg, #0A4A22, #003A17);
   --canvas-image: radial-gradient(var(--field-dot) 1.4px, transparent 1.4px);
   --canvas-size:  26px 26px;
+  --glass:        rgba(8,26,15,.82);
+  --hover:        rgba(170,220,180,.07);
+  --chip-bg:      #274236;
+  --chip-fg:      #EAF4EC;
 }
 
 .skin-default {
@@ -132,11 +144,15 @@ body {
   --shadow:      rgba(0,0,0,.5);
   --ambient-1:   rgba(124,140,240,.14);
   --card-pad:    14px 18px 15px 18px;
-  --card-fill:   linear-gradient(150deg, #303343, #23262F 60%);
+  --card-fill:   linear-gradient(150deg, color-mix(in srgb, #23262F 88%, #8c96d8 12%), #23262F 60%);
   --card-filter: drop-shadow(0 3px 6px rgba(0,0,0,.5));
   --header-grad: linear-gradient(180deg, #2A2D38, #1A1C24);
   --canvas-image: radial-gradient(var(--field-dot) 1.4px, transparent 1.4px);
   --canvas-size:  26px 26px;
+  --glass:        rgba(20,21,26,.82);
+  --hover:        rgba(190,200,230,.07);
+  --chip-bg:      #343A4E;
+  --chip-fg:      #EEF0F8;
 }
 
 .skin-cloud {
@@ -160,4 +176,8 @@ body {
   --header-grad: linear-gradient(180deg, #EAF5FF, #D2E8FB);
   --canvas-image: linear-gradient(180deg, #7FB6E6 0%, #9ECAED 50%, #BCDDF6 100%);
   --canvas-size:  auto;
+  --glass:        rgba(245,251,255,.85);
+  --hover:        rgba(40,110,170,.08);
+  --chip-bg:      #2F6FAE;
+  --chip-fg:      #FFFFFF;
 }

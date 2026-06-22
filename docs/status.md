@@ -243,7 +243,7 @@
 - [ ] ロゴ・スキンの見え方をヘッダーサイズで最終確認する
 
 ### オフライン・同期
-- [ ] Firestoreのオフラインキャッシュを有効化する
+- [x] Firestoreのオフラインキャッシュを有効化する
 - [ ] オフライン状態からの復帰時、データが正しく同期されることを確認する
 
 ### 品質
@@ -252,7 +252,7 @@
 - [ ] `docs/constraints.md` のNEVERルールに違反する処理が無いか最終確認する
 
 ### ✅ 完了確認
-- [ ] `pnpm build` が成功する
+- [x] `pnpm build` が成功する
 - [ ] 他ユーザーのデータにアクセスできないことをセキュリティルールで確認する
 - [ ] ネットワークを切断した状態でも既存データが表示される
 - [ ] `firebase deploy` でデプロイし公開URLで全機能を最終確認する
@@ -264,3 +264,22 @@
 - [ ] Phase 0〜9 のすべての完了確認がパスしている
 - [ ] スマホ・PCの両方でログインからメモの作成・つなぐ・リスト表示・書き出しまで一通り動作する
 - [ ] 別タブ・別デバイスで同時に開いても、位置・テキスト・削除・つながりがリアルタイムに反映される
+
+---
+
+## チェックリスト外の追加対応（Phase 9 並行作業）
+
+### デザイン整備
+- ヘッダーロゴを「Yggd-memo」テキストから `public/logo-mask.png`（ユグドラシルの木）に差し替え。`mask` CSS で `--ink` 色に追従するよう実装。
+- `Header.tsx` にリスト画面（`/list`）・設定画面（`/settings`）へのアイコンボタンを追加（`usePathname` でアクティブ状態を表示）。
+- リスト画面・設定画面の背景色・文字色・カード色をキャンバス側と同じ CSS 変数（`--field` / `--paper` / `--ink` / `--ink-soft` / `--line` / `--dusk` 等）に統一。
+- 設定画面のスキン選択プレビューを丸・四角から、`globals.css` の 27点ポリゴン（葉っぱ／角丸四角／雲）を流用したカード形状に変更。
+- `CanvasControls.tsx` の件数表示（`--glass`）・コントロールボタン群（`--paper`）の配色をデザイン変数に統一。件数は左下、コントロールは右下に分離。
+- 「切る」ボタンをアクティブ時に赤（`#dc2626` / 白文字）に変更（スキン依存しない固定色）。
+
+### バグ修正
+- **スマホでのつなぐ操作が不可だった問題を修正。** タッチ操作では `pointerenter`/`leave` が発火しないため、`NoteCard` に `data-note-id` を追加し、`handleCanvasPointerMove` 内で `document.elementFromPoint` + `.closest('[data-note-card]')` を使って `targetId` を更新するように変更（マウス操作の既存ハンドラーはそのまま残存）。
+- **新規メモが画面外に生成される問題を修正。** `src/hooks/useCanvasView.ts` を新設し、pan・zoom の状態管理と `viewportCenterWorld()` を実装。`Canvas.tsx` はローカル state をフックに移行し `view` prop から受け取る構造に変更。`page.tsx` でフックを共有し、メモ追加時に `viewportCenterWorld()` で現在の表示中央座標を計算して渡すよう修正。
+
+### インフラ
+- `src/lib/firebase.ts` に Firestore オフラインキャッシュ（IndexedDB永続化）を追加。Firebase v9+ 推奨の `initializeFirestore` + `persistentLocalCache` + `persistentMultipleTabManager` を使用。Next.js 静的ビルド時（Node.js 環境）は `typeof window` ガードで `getFirestore()` にフォールバック。

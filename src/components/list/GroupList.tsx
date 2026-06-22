@@ -47,17 +47,10 @@ export function GroupList({ notes, links, onAddLink, onRemoveLink }: Props) {
   const connectedGroups = groups.filter((g) => g.notes.length > 1);
   const soloGroups = groups.filter((g) => g.notes.length === 1);
 
-  /**
-   * groups 配列と同じ順序で各グループの現在の根ノードIDを解決する。
-   * groupNotes は件数降順で返すため、connected groups は先頭に固まる。
-   * ExportButtons に渡し、「根にする」上書きを書き出しに反映する。
-   */
   const rootIds = groups.map((g, i) => {
     if (i < connectedGroups.length) {
-      // connected group: rootOverrides キーはそのまま groups のインデックス
       return rootOverrides.get(i) ?? g.defaultRootId;
     }
-    // solo group: ノードが1件しかないので defaultRootId で確定
     return g.defaultRootId;
   });
 
@@ -66,7 +59,10 @@ export function GroupList({ notes, links, onAddLink, onRemoveLink }: Props) {
       {/* スクロール可能なグループ一覧 */}
       <div className="flex-1 overflow-y-auto">
         {groups.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm text-gray-400">
+          <div
+            className="flex h-full items-center justify-center text-sm"
+            style={{ color: 'var(--ink-soft)' }}
+          >
             メモがありません
           </div>
         ) : (
@@ -88,14 +84,22 @@ export function GroupList({ notes, links, onAddLink, onRemoveLink }: Props) {
             {/* 単独のメモ */}
             {soloGroups.length > 0 && (
               <section>
-                <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-gray-400">
+                <h2
+                  className="mb-2 px-1 text-xs font-medium uppercase tracking-wide"
+                  style={{ color: 'var(--ink-soft)' }}
+                >
                   単独のメモ（{soloGroups.length}件）
                 </h2>
                 <div className="flex flex-col gap-1">
                   {soloGroups.map((group) => (
                     <div
                       key={group.notes[0].id}
-                      className="rounded-lg border border-gray-100 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm"
+                      className="rounded-lg px-3 py-2 text-sm"
+                      style={{
+                        background: 'var(--paper)',
+                        color: 'var(--ink)',
+                        border: '1px solid var(--line)',
+                      }}
                     >
                       {group.notes[0].text}
                     </div>

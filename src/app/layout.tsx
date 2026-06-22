@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Zen_Kaku_Gothic_New, Zen_Old_Mincho } from "next/font/google";
 import "./globals.css";
 import { AuthGuard } from "@/components/AuthGuard";
 import { Header } from "@/components/layout/Header";
 import { AppProviders } from "@/components/AppProviders";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const zenGothic = Zen_Kaku_Gothic_New({
+  variable: "--gothic",
   subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const zenMincho = Zen_Old_Mincho({
+  variable: "--display",
   subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -27,8 +29,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="ja"
+      className={`${zenGothic.variable} ${zenMincho.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
           <AppProviders>

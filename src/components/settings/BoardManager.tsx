@@ -46,14 +46,24 @@ export function BoardManager() {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
+      <h2
+        className="text-sm font-semibold uppercase tracking-wide"
+        style={{ color: 'var(--ink-soft)' }}
+      >
         ボード一覧・管理
       </h2>
 
       {/* ボード一覧 */}
-      <ul className="divide-y divide-zinc-100 border border-zinc-200 rounded-xl overflow-hidden">
+      <ul
+        className="divide-y rounded-xl overflow-hidden"
+        style={{ border: '1px solid var(--line)', borderColor: 'var(--line)' }}
+      >
         {boards.map((board) => (
-          <li key={board.id} className="flex items-center gap-2 px-4 py-3 bg-white">
+          <li
+            key={board.id}
+            className="flex items-center gap-2 px-4 py-3"
+            style={{ background: 'var(--paper)', borderColor: 'var(--line)' }}
+          >
             {renamingId === board.id ? (
               <>
                 <input
@@ -65,16 +75,21 @@ export function BoardManager() {
                     if (e.key === 'Enter') commitRename(board);
                     if (e.key === 'Escape') cancelRename();
                   }}
-                  className="flex-1 min-w-0 text-sm border border-zinc-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="flex-1 min-w-0 text-sm rounded-lg px-3 py-1 focus:outline-none"
+                  style={{
+                    background: 'var(--field)',
+                    color: 'var(--ink)',
+                    border: '1px solid var(--dusk)',
+                  }}
                   aria-label="ボード名を入力"
                 />
                 <button
                   onMouseDown={(e) => {
-                    // blur より先に commitRename を確定させる
                     e.preventDefault();
                     commitRename(board);
                   }}
-                  className="text-xs text-zinc-500 hover:text-zinc-800 px-2 py-1 rounded transition-colors"
+                  className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
+                  style={{ color: 'var(--ink)' }}
                 >
                   確定
                 </button>
@@ -83,7 +98,8 @@ export function BoardManager() {
                     e.preventDefault();
                     cancelRename();
                   }}
-                  className="text-xs text-zinc-400 hover:text-zinc-600 px-2 py-1 rounded transition-colors"
+                  className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
+                  style={{ color: 'var(--ink-soft)' }}
                 >
                   取消
                 </button>
@@ -92,16 +108,20 @@ export function BoardManager() {
               <>
                 <button
                   onClick={() => switchBoard(board.id)}
-                  className="flex-1 min-w-0 text-left text-sm text-zinc-800 truncate"
+                  className="flex-1 min-w-0 text-left text-sm truncate"
+                  style={{ color: 'var(--ink)' }}
                 >
                   {board.name}
                 </button>
                 {currentBoard?.id === board.id && (
-                  <span className="text-xs text-zinc-400 shrink-0">表示中</span>
+                  <span className="text-xs shrink-0" style={{ color: 'var(--ink-soft)' }}>
+                    表示中
+                  </span>
                 )}
                 <button
                   onClick={() => startRename(board)}
-                  className="shrink-0 text-xs text-zinc-400 hover:text-zinc-700 px-2 py-1 rounded transition-colors"
+                  className="shrink-0 text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
+                  style={{ color: 'var(--ink-soft)' }}
                   aria-label={`${board.name} の名前を変更`}
                 >
                   名前変更
@@ -109,7 +129,8 @@ export function BoardManager() {
                 <button
                   onClick={() => removeBoard(board.id)}
                   disabled={boards.length <= 1}
-                  className="shrink-0 text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="shrink-0 text-xs px-2 py-1 rounded transition-opacity hover:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ color: 'var(--dusk)' }}
                   aria-label={`${board.name} を削除`}
                 >
                   削除
@@ -131,13 +152,19 @@ export function BoardManager() {
             if (e.key === 'Enter') handleAdd();
           }}
           placeholder="新しいボード名"
-          className="flex-1 min-w-0 text-sm border border-zinc-200 rounded-xl px-3 py-2 placeholder:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+          className="flex-1 min-w-0 text-sm rounded-xl px-3 py-2 focus:outline-none"
+          style={{
+            background: 'var(--paper)',
+            color: 'var(--ink)',
+            border: '1px solid var(--line)',
+          }}
           aria-label="新しいボード名を入力"
         />
         <button
           onClick={handleAdd}
           disabled={!newName.trim() || adding}
-          className="shrink-0 text-sm px-4 py-2 rounded-xl bg-zinc-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-700 transition-colors"
+          className="shrink-0 text-sm px-4 py-2 rounded-xl transition-opacity hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed"
+          style={{ background: 'var(--dusk)', color: '#fff' }}
         >
           追加
         </button>

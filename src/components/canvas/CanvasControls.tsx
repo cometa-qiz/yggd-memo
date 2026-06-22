@@ -13,6 +13,16 @@ type Props = {
   onToggleCutMode: () => void;
 };
 
+/** 縦区切り線 */
+function Divider() {
+  return (
+    <span
+      aria-hidden
+      style={{ display: 'block', width: '1px', height: '22px', background: 'var(--line)', flexShrink: 0 }}
+    />
+  );
+}
+
 export function CanvasControls({
   noteCount,
   zoom,
@@ -23,61 +33,133 @@ export function CanvasControls({
   onToggleCutMode,
 }: Props) {
   return (
-    <div
-      className="absolute bottom-4 right-4 z-30 flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white/90 px-3 py-2 shadow-lg backdrop-blur-sm"
-      onClick={(e) => e.stopPropagation()}
-      onPointerDown={(e) => e.stopPropagation()}
-    >
-      <span className="min-w-[2.5rem] text-center text-xs text-gray-500">
+    <>
+      {/* 件数表示（左下）: design-mockup.html .count と同仕様 */}
+      <div
+        className="absolute bottom-4 left-4 z-30 select-none"
+        style={{
+          background: 'var(--glass)',
+          backdropFilter: 'blur(3px)',
+          WebkitBackdropFilter: 'blur(3px)',
+          border: '1px solid var(--line)',
+          borderRadius: '20px',
+          padding: '5px 11px',
+          fontSize: '12px',
+          color: 'var(--ink-soft)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         {noteCount}件
-      </span>
+      </div>
 
-      <div className="h-4 w-px bg-gray-200" />
-
-      <button
-        onClick={onZoomOut}
-        disabled={zoom <= MIN_ZOOM}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-base text-gray-600 hover:bg-gray-100 disabled:opacity-30"
-        aria-label="縮小"
+      {/* コントロール（右下）: design-mockup.html .controls .grp と同仕様 */}
+      <div
+        className="absolute bottom-4 right-4 z-30 flex items-center"
+        style={{
+          background: 'var(--paper)',
+          border: '1px solid var(--line)',
+          borderRadius: '13px',
+          boxShadow: '0 2px 8px var(--shadow)',
+          overflow: 'hidden',
+        }}
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
       >
-        −
-      </button>
-      <span className="min-w-[2.5rem] text-center text-xs text-gray-500">
-        {Math.round(zoom * 100)}%
-      </span>
-      <button
-        onClick={onZoomIn}
-        disabled={zoom >= MAX_ZOOM}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-base text-gray-600 hover:bg-gray-100 disabled:opacity-30"
-        aria-label="拡大"
-      >
-        ＋
-      </button>
+        {/* 縮小 */}
+        <button
+          onClick={onZoomOut}
+          disabled={zoom <= MIN_ZOOM}
+          className="canvas-ctrl-btn flex items-center justify-center"
+          style={{
+            width: '40px',
+            height: '40px',
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--ink)',
+            fontSize: '18px',
+            cursor: 'pointer',
+          }}
+          aria-label="縮小"
+        >
+          −
+        </button>
 
-      <div className="h-4 w-px bg-gray-200" />
+        <Divider />
 
-      <button
-        onClick={onCenter}
-        className="flex h-7 items-center justify-center rounded-lg px-2 text-xs text-gray-600 hover:bg-gray-100"
-        aria-label="中央寄せ"
-      >
-        中央
-      </button>
+        {/* ズーム率 */}
+        <span
+          className="select-none text-center text-xs"
+          style={{ minWidth: '2.5rem', color: 'var(--ink-soft)', padding: '0 4px' }}
+        >
+          {Math.round(zoom * 100)}%
+        </span>
 
-      <div className="h-4 w-px bg-gray-200" />
+        <Divider />
 
-      <button
-        onClick={onToggleCutMode}
-        className={`flex h-7 items-center justify-center gap-1 rounded-lg px-2 text-xs ${
-          cutMode
-            ? 'bg-red-100 text-red-600 ring-1 ring-red-300 hover:bg-red-200'
-            : 'text-gray-600 hover:bg-gray-100'
-        }`}
-        aria-label="切るモード切り替え"
-        aria-pressed={cutMode}
-      >
-        ✂ 切る
-      </button>
-    </div>
+        {/* 拡大 */}
+        <button
+          onClick={onZoomIn}
+          disabled={zoom >= MAX_ZOOM}
+          className="canvas-ctrl-btn flex items-center justify-center"
+          style={{
+            width: '40px',
+            height: '40px',
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--ink)',
+            fontSize: '18px',
+            cursor: 'pointer',
+          }}
+          aria-label="拡大"
+        >
+          ＋
+        </button>
+
+        <Divider />
+
+        {/* 中央寄せ */}
+        <button
+          onClick={onCenter}
+          className="canvas-ctrl-btn flex items-center justify-center text-xs"
+          style={{
+            height: '40px',
+            padding: '0 10px',
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--ink)',
+            cursor: 'pointer',
+          }}
+          aria-label="中央寄せ"
+        >
+          中央
+        </button>
+
+        <Divider />
+
+        {/* 切るモード */}
+        <button
+          onClick={onToggleCutMode}
+          className={cutMode ? '' : 'canvas-ctrl-btn'}
+          style={{
+            height: '40px',
+            padding: '0 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '12px',
+            border: 'none',
+            cursor: 'pointer',
+            background: cutMode ? '#dc2626' : 'transparent',
+            color: cutMode ? '#ffffff' : 'var(--ink)',
+            transition: 'background 0.15s ease, color 0.15s ease',
+          }}
+          aria-label="切るモード切り替え"
+          aria-pressed={cutMode}
+        >
+          ✂ 切る
+        </button>
+      </div>
+    </>
   );
 }

@@ -62,25 +62,37 @@ function TreeNodeView({
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); onDragOver(node.note.id); }}
         onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDrop(node.note.id); }}
         onDragEnd={onDragEnd}
-        className={[
-          'flex items-start gap-2 py-0.5 rounded transition-colors',
-          isDragOver ? 'bg-blue-50 ring-1 ring-blue-200' : '',
-          isDragging ? 'opacity-40 cursor-grabbing' : !isRoot ? 'cursor-grab' : '',
-        ].join(' ')}
+        className="flex items-start gap-2 py-0.5 rounded transition-colors"
+        style={{
+          background: isDragOver ? 'rgba(var(--accent-rgb), 0.15)' : 'transparent',
+          opacity: isDragging ? 0.4 : 1,
+          cursor: isDragging ? 'grabbing' : (!isRoot ? 'grab' : 'default'),
+          outline: isDragOver ? '1px solid rgba(var(--accent-rgb), 0.4)' : 'none',
+        }}
       >
         {/* ツリー線・根マーク */}
         <span
-          className="mt-0.5 select-none whitespace-pre font-mono text-xs text-gray-400"
+          className="mt-0.5 select-none whitespace-pre font-mono text-xs"
+          style={{ color: 'var(--ink-soft)' }}
           aria-hidden
         >
           {isRoot ? '■ ' : `${prefix} `}
         </span>
 
         {/* メモ本文 */}
-        <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-snug text-gray-800">
+        <p
+          className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-snug"
+          style={{ color: 'var(--ink)' }}
+        >
           {node.note.text}
           {isRoot && (
-            <span className="ml-1.5 inline-block align-middle rounded bg-amber-100 px-1 py-px text-xs font-medium text-amber-700">
+            <span
+              className="ml-1.5 inline-block align-middle rounded px-1 py-px text-xs font-medium"
+              style={{
+                background: 'rgba(var(--accent-rgb), 0.18)',
+                color: 'var(--dusk)',
+              }}
+            >
               根
             </span>
           )}
@@ -91,7 +103,8 @@ function TreeNodeView({
           <button
             onClick={() => onSetRoot(node.note.id)}
             title="この操作は一時的です。ページを再読み込みするとデフォルトに戻ります"
-            className="mt-0.5 shrink-0 text-xs text-blue-400 hover:text-blue-700"
+            className="mt-0.5 shrink-0 text-xs transition-opacity hover:opacity-70"
+            style={{ color: 'var(--dusk)' }}
           >
             根にする
           </button>
@@ -151,15 +164,12 @@ export function GroupItem({
     if (!dragState) return;
     const { noteId: draggedId, parentId: currentParentId } = dragState;
 
-    // 状態を先にリセットしてUIを即座に更新する
     setDragState(null);
     setDragOverId(null);
 
-    // 自分自身・現在の親へのドロップは変化なし
     if (draggedId === targetId) return;
     if (currentParentId === targetId) return;
 
-    // 現在の親とのリンクを論理削除する
     if (currentParentId !== null) {
       const oldLink = group.links.find(
         (l) =>
@@ -170,7 +180,6 @@ export function GroupItem({
       if (oldLink) await onRemoveLink(oldLink.id);
     }
 
-    // 新しい親とのリンクを追加する（重複防止）
     const linkExists = group.links.some(
       (l) =>
         l.isActive &&
@@ -181,13 +190,29 @@ export function GroupItem({
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-2">
-        <span className="text-xs text-gray-500">{group.notes.length}件のメモ</span>
+    <section
+      className="overflow-hidden rounded-xl"
+      style={{
+        background: 'var(--paper)',
+        border: '1px solid var(--line)',
+        filter: 'var(--card-filter)',
+      }}
+    >
+      <div
+        className="flex items-center justify-between px-4 py-2"
+        style={{
+          borderBottom: '1px solid var(--line)',
+          background: 'rgba(255,255,255,0.04)',
+        }}
+      >
+        <span className="text-xs" style={{ color: 'var(--ink-soft)' }}>
+          {group.notes.length}件のメモ
+        </span>
         {isRootOverridden && (
           <button
             onClick={onResetRoot}
-            className="text-xs text-gray-400 hover:text-gray-700"
+            className="text-xs transition-opacity hover:opacity-70"
+            style={{ color: 'var(--ink-soft)' }}
           >
             デフォルトに戻す
           </button>

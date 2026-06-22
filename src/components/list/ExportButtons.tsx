@@ -44,19 +44,35 @@ export function ExportButtons({ groups, rootIds }: Props) {
   }
 
   return (
-    <div className="flex shrink-0 items-center gap-2 border-t border-gray-100 bg-white px-4 py-3">
-      <span className="mr-1 text-xs text-gray-400">書き出し</span>
+    <div
+      className="flex shrink-0 items-center gap-2 px-4 py-3"
+      style={{
+        borderTop: '1px solid var(--line)',
+        background: 'var(--paper)',
+      }}
+    >
+      <span className="mr-1 text-xs" style={{ color: 'var(--ink-soft)' }}>書き出し</span>
       <button
         onClick={handleExportCSV}
         disabled={isEmpty}
-        className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
+        style={{
+          border: '1px solid var(--line)',
+          background: 'transparent',
+          color: 'var(--ink)',
+        }}
       >
         CSV
       </button>
       <button
         onClick={handleExportJSON}
         disabled={isEmpty}
-        className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
+        style={{
+          border: '1px solid var(--line)',
+          background: 'transparent',
+          color: 'var(--ink)',
+        }}
       >
         JSON
       </button>

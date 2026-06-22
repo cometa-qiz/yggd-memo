@@ -5,6 +5,7 @@ import type { Note, Link, BoardSkin } from '@/types';
 import { NoteCard } from './NoteCard';
 import { LinkLine } from './LinkLine';
 import { CanvasControls } from './CanvasControls';
+import type { CanvasView } from '@/hooks/useCanvasView';
 
 const CARD_CX = 100;
 const CARD_CY = 40;
@@ -29,10 +30,46 @@ function segmentsIntersect(
   return t >= 0 && t <= 1 && u >= 0 && u <= 1;
 }
 
+// 点 (px,py) から線分 (ax,ay)-(bx,by) への距離の二乗
+function distPointToSegmentSq(
+  px: number, py: number,
+  ax: number, ay: number, bx: number, by: number,
+): number {
+  const dx = bx - ax, dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) {
+    const ex = px - ax, ey = py - ay;
+    return ex * ex + ey * ey;
+  }
+  let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t * dx, cy = ay + t * dy;
+  const ex = px - cx, ey = py - cy;
+  return ex * ex + ey * ey;
+}
+
+// 2本の線分間の最小距離の二乗（4端点それぞれの相手線分への距離の最小値で近似）
+// 平行・コリニアな線分でも正しく近接を判定できる
+function minSegDistSq(
+  ax: number, ay: number, bx: number, by: number,
+  cx: number, cy: number, dx: number, dy: number,
+): number {
+  return Math.min(
+    distPointToSegmentSq(ax, ay, cx, cy, dx, dy),
+    distPointToSegmentSq(bx, by, cx, cy, dx, dy),
+    distPointToSegmentSq(cx, cy, ax, ay, bx, by),
+    distPointToSegmentSq(dx, dy, ax, ay, bx, by),
+  );
+}
+
 function gestureIntersectsLink(
   ax: number, ay: number, bx: number, by: number,
   x1: number, y1: number, x2: number, y2: number,
 ): boolean {
+  // ±10 note-space 単位以内の通過を切断と判定
+  // segmentsIntersect は平行線分（denom≈0）で false を返すため、
+  // minSegDistSq で4端点すべての近接を補完する
+  const CUT_DIST_SQ = 10 * 10;
   const dxHalf = (x2 - x1) * 0.5;
   const cp1x = x1 + dxHalf, cp2x = x2 - dxHalf;
   const N = 20;
@@ -43,6 +80,7 @@ function gestureIntersectsLink(
     const curBx = mt*mt*mt*x1 + 3*mt*mt*t*cp1x + 3*mt*t*t*cp2x + t*t*t*x2;
     const curBy = mt*mt*mt*y1 + 3*mt*mt*t*y1 + 3*mt*t*t*y2 + t*t*t*y2;
     if (segmentsIntersect(ax, ay, bx, by, prevBx, prevBy, curBx, curBy)) return true;
+    if (minSegDistSq(ax, ay, bx, by, prevBx, prevBy, curBx, curBy) < CUT_DIST_SQ) return true;
     prevBx = curBx;
     prevBy = curBy;
   }
@@ -64,6 +102,7 @@ type Props = {
   notes: Note[];
   links: Link[];
   skin?: BoardSkin;
+  view: CanvasView;
   onEdit: (noteId: string, text: string) => Promise<void>;
   onRemove: (noteId: string) => Promise<void>;
   onMove: (noteId: string, x: number, y: number) => Promise<void>;
@@ -71,11 +110,12 @@ type Props = {
   onRemoveLink: (linkId: string) => Promise<void>;
 };
 
-export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, onAddLink, onRemoveLink }: Props) {
+export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, onMove, onAddLink, onRemoveLink }: Props) {
+  // pan・zoom は useCanvasView フックから受け取る（page.tsx と共有）
+  const { zoom, pan, setZoom, setPan, zoomRef, panRef, canvasRef } = view;
+
   const [connecting, setConnecting] = useState<ConnectState | null>(null);
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(1.0);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [cutMode, setCutMode] = useState(false);
   const [cutLine, setCutLine] = useState<CutLineState | null>(null);
   const [panDragging, setPanDragging] = useState(false);
@@ -86,14 +126,6 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
   );
 
   // ── refs ─────────────────────────────────────────────────────────
-
-  const canvasRef = useRef<HTMLDivElement>(null);
-
-  // ホイール・ピンチ処理でクロージャーの stale 値を避けるため ref に常時反映
-  const zoomRef = useRef(zoom);
-  const panRef = useRef(pan);
-  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
-  useEffect(() => { panRef.current = pan; }, [pan]);
 
   const cutStateRef = useRef<{
     startX: number; startY: number;
@@ -295,7 +327,13 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
 
   function handleCanvasPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     // ピンチ中はポインターイベントを無視（touch イベントが主導）
-    if (pinchRef.current) return;
+    if (pinchRef.current) {
+      console.log('[CUT-DBG] PointerDown skipped: pinch active');
+      return;
+    }
+
+    console.log('[CUT-DBG] PointerDown cutMode=%s pointerId=%d target=%s',
+      cutModeRef.current, e.pointerId, (e.target as Element).tagName);
 
     const rect = e.currentTarget.getBoundingClientRect();
 
@@ -304,6 +342,7 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
       e.currentTarget.setPointerCapture(e.pointerId);
       cutStateRef.current = { startX: x, startY: y, prevX: x, prevY: y, cutIds: new Set() };
       setCutLine({ x1: x, y1: y, x2: x, y2: y });
+      console.log('[CUT-DBG] PointerDown: cut gesture started x=%f y=%f', x, y);
       return;
     }
 
@@ -324,19 +363,56 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
     const rect = e.currentTarget.getBoundingClientRect();
 
     if (cutModeRef.current) {
-      const state = cutStateRef.current;
-      if (!state) return;
+      let state = cutStateRef.current;
+
+      if (!state) {
+        if (e.buttons === 0) {
+          // ホバー中（ボタン未押下）なので何もしない
+          return;
+        }
+        // ボタン押下中なのに state が null = PointerLeave 等で消去されたと推定。
+        // 現在地から state を再初期化してジェスチャーを継続する。
+        console.log('[CUT-DBG] PointerMove: state lost while pressing → re-init');
+        const { x: ix, y: iy } = toNoteCoords(e.clientX, e.clientY, rect);
+        e.currentTarget.setPointerCapture(e.pointerId);
+        cutStateRef.current = { startX: ix, startY: iy, prevX: ix, prevY: iy, cutIds: new Set() };
+        state = cutStateRef.current;
+        setCutLine({ x1: ix, y1: iy, x2: ix, y2: iy });
+        return; // 次の PointerMove から交差判定を開始する
+      }
+
+      // state があっても buttons=0 = PointerUp/PointerCancel を経ずに指が離れた
+      if (e.buttons === 0) {
+        cutStateRef.current = null;
+        setCutLine(null);
+        return;
+      }
+
       const { x, y } = toNoteCoords(e.clientX, e.clientY, rect);
       const { prevX, prevY, cutIds, startX, startY } = state;
+
+      console.log('[CUT-DBG] PointerMove: links=%d prev=(%f,%f) cur=(%f,%f)',
+        links.length, prevX, prevY, x, y);
 
       for (const link of links) {
         if (cutIds.has(link.id)) continue;
         const a = notesById.get(link.a);
         const b = notesById.get(link.b);
-        if (!a || !b) continue;
-        if (gestureIntersectsLink(prevX, prevY, x, y, a.x + CARD_CX, a.y + CARD_CY, b.x + CARD_CX, b.y + CARD_CY)) {
+        if (!a || !b) {
+          console.log('[CUT-DBG] link %s: note not found a=%s b=%s', link.id, link.a, link.b);
+          continue;
+        }
+        // 最初の PointerMove のみリンク座標をログ出力（診断用）
+        if (prevX === startX && prevY === startY) {
+          console.log('[CUT-DBG] link %s endpoints: (%f,%f)→(%f,%f)',
+            link.id, a.x + CARD_CX, a.y + CARD_CY, b.x + CARD_CX, b.y + CARD_CY);
+        }
+        const hit = gestureIntersectsLink(prevX, prevY, x, y, a.x + CARD_CX, a.y + CARD_CY, b.x + CARD_CX, b.y + CARD_CY);
+        if (hit) {
+          console.log('[CUT-DBG] DETECTED link=%s → queued (commit on PointerUp)', link.id);
           cutIds.add(link.id);
-          onRemoveLink(link.id).catch(console.error);
+          // onRemoveLink はここでは呼ばない: 即時 DOM 削除が PointerCancel を誘発するため
+          // PointerUp / PointerCancel(buttons=0) / PointerLeave(buttons=0) でまとめて commit する
         }
       }
       state.prevX = x;
@@ -353,14 +429,32 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
 
     if (!connecting) return;
     const { x, y } = toNoteCoords(e.clientX, e.clientY, rect);
-    setConnecting((prev) => prev ? { ...prev, cursorX: x, cursorY: y } : null);
+
+    // タッチ操作では pointerenter/leave が発火しないため elementFromPoint でカードを特定する。
+    // SVG は pointer-events:none なのでカード要素まで透過できる。
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const cardEl = el?.closest('[data-note-card="true"]') as HTMLElement | null;
+    const hoveredId = cardEl?.dataset.noteId ?? null;
+    const newTargetId = (hoveredId && hoveredId !== connecting.fromId) ? hoveredId : null;
+
+    setConnecting((prev) => prev ? { ...prev, cursorX: x, cursorY: y, targetId: newTargetId } : null);
+  }
+
+  function commitCuts(state: typeof cutStateRef.current) {
+    if (!state || state.cutIds.size === 0) return;
+    console.log('[CUT-DBG] Committing %d cut(s)', state.cutIds.size);
+    for (const linkId of state.cutIds) {
+      onRemoveLink(linkId).catch(console.error);
+    }
   }
 
   async function handleCanvasPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    console.log('[CUT-DBG] PointerUp cutMode=%s', cutModeRef.current);
     if (cutModeRef.current) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+      const state = cutStateRef.current;
       cutStateRef.current = null;
       setCutLine(null);
+      commitCuts(state);
       return;
     }
 
@@ -376,10 +470,20 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
     if (targetId) await onAddLink(fromId, targetId);
   }
 
-  function handleCanvasPointerLeave() {
+  function handleCanvasPointerLeave(e: React.PointerEvent<HTMLDivElement>) {
+    console.log('[CUT-DBG] PointerLeave cutMode=%s state=%s buttons=%d',
+      cutModeRef.current, cutStateRef.current ? 'ok' : 'null', e.buttons);
     if (cutModeRef.current) {
+      if (e.buttons > 0) {
+        // ボタン押下中（ジェスチャー中）の PointerLeave では state を維持する。
+        // setPointerCapture が効いていれば本来発火しないが万一の場合も継続できるようにする。
+        return;
+      }
+      // ホバーオフ（ボタン未押下）なら state と visual をクリアし、蓄積した切断を commit
+      const state = cutStateRef.current;
       cutStateRef.current = null;
       setCutLine(null);
+      commitCuts(state);
       return;
     }
 
@@ -393,10 +497,16 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
   }
 
   function handleCanvasPointerCancel(e: React.PointerEvent<HTMLDivElement>) {
+    console.log('[CUT-DBG] PointerCancel cutMode=%s buttons=%d', cutModeRef.current, e.buttons);
     if (cutModeRef.current) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+      if (e.buttons > 0) {
+        // ボタンがまだ押されている: state を維持して次の PointerMove でジェスチャーを継続
+        return;
+      }
+      const state = cutStateRef.current;
       cutStateRef.current = null;
       setCutLine(null);
+      commitCuts(state);
       return;
     }
     if (panDragRef.current) {
@@ -511,6 +621,7 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
           inset: 0,
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: '0 0',
+          userSelect: 'none',
         }}
       >
         <svg
@@ -532,8 +643,8 @@ export function Canvas({ notes, links, skin = 'leaf', onEdit, onRemove, onMove, 
                 y1={ac?.cy ?? a.y + CARD_CY}
                 x2={bc?.cx ?? b.x + CARD_CX}
                 y2={bc?.cy ?? b.y + CARD_CY}
-                selected={selectedLinkId === link.id}
-                onSelect={() => setSelectedLinkId(link.id)}
+                selected={!cutMode && selectedLinkId === link.id}
+                onSelect={cutMode ? undefined : () => setSelectedLinkId(link.id)}
               />
             );
           })}
