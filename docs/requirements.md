@@ -402,3 +402,102 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 ```
 
 > Yggd-memo用に、ハビットトラッカーとは別の新しいFirebaseプロジェクトを作成して使用する。
+
+---
+
+## 10. デザイン仕様（docs/design-mockup.html より）
+
+> アプリ名は「Yggd-memo」のまま維持する（モックアップ内の「紡 — つむぐメモ」は旧仮称）。
+
+### フォント
+
+- **見出し・ブランド**: `"Zen Old Mincho"` (serif) — CSS変数 `--display`
+- **UIテキスト全般**: `"Zen Kaku Gothic New"` (sans-serif) — CSS変数 `--gothic`
+- Google Fonts より読み込む（`wght@400;700`）
+
+### スキンシステム
+
+スキンは CSS カスタムプロパティで実装する。`:root` が葉っぱスキン（デフォルト）、`.skin-default` と `.skin-cloud` クラスが変数を上書きする。スキンクラスはキャンバスラッパー要素に適用し、子要素（カード・SVG線）が変数を継承する。
+
+#### 葉っぱ（`:root` / `.skin-leaf`）— ダーク緑
+
+| 変数 | 値 | 用途 |
+|---|---|---|
+| `--ink` | `#E7EFE7` | テキスト色 |
+| `--ink-soft` | `#8DA593` | 補助テキスト |
+| `--paper` | `#173524` | カード基色 |
+| `--field` | `#08160D` | キャンバス背景 |
+| `--field-dot` | `rgba(150,210,160,.07)` | ドットグリッド色 |
+| `--accent-rgb` | `46,167,99` | アクセント（rgba用） |
+| `--dusk` | `#2EA763` | アクセント |
+| `--thread` | `#5E8369` | 接続線色 |
+| `--ambient-1` | `rgba(46,167,99,.18)` | 環境光グロー |
+| `--card-fill` | `linear-gradient(150deg, color-mix(in srgb, #173524 84%, #79cf94 16%), #173524 58%)` | カード背景グラデーション |
+| `--card-filter` | `drop-shadow(0 3px 5px rgba(0,0,0,.5)) drop-shadow(0 0 1px rgba(150,210,160,.5))` | カード影 |
+| `--header-grad` | `linear-gradient(180deg, #0A4A22, #003A17)` | ヘッダー背景 |
+| `--canvas-image` | `radial-gradient(var(--field-dot) 1.4px, transparent 1.4px)` | キャンバスドットパターン |
+| `--canvas-size` | `26px 26px` | ドットパターンサイズ |
+
+#### デフォルト（`.skin-default`）— ダーク藍
+
+| 変数 | 値 |
+|---|---|
+| `--ink` | `#E8EAF2` |
+| `--paper` | `#23262F` |
+| `--field` | `#14151A` |
+| `--field-dot` | `rgba(185,193,225,.07)` |
+| `--accent-rgb` | `124,140,240` |
+| `--dusk` | `#7C8CF0` |
+| `--thread` | `#8089A8` |
+| `--ambient-1` | `rgba(124,140,240,.14)` |
+| `--card-fill` | `linear-gradient(150deg, color-mix(in srgb, #23262F 88%, #8c96d8 12%), #23262F 60%)` |
+| `--card-filter` | `drop-shadow(0 3px 6px rgba(0,0,0,.5))` |
+| `--header-grad` | `linear-gradient(180deg, #2A2D38, #1A1C24)` |
+
+#### 雲（`.skin-cloud`）— ライト青
+
+| 変数 | 値 |
+|---|---|
+| `--ink` | `#33475A` |
+| `--paper` | `#FFFFFF` |
+| `--field` | `#9FCBEC` |
+| `--field-dot` | `rgba(40,100,160,.12)` |
+| `--accent-rgb` | `42,118,196` |
+| `--dusk` | `#2C7BC6` |
+| `--thread` | `#5E97CF` |
+| `--ambient-1` | `rgba(255,255,255,.6)` |
+| `--card-fill` | `linear-gradient(180deg, #FFFFFF, #E4F0FB)` |
+| `--card-filter` | `drop-shadow(0 6px 11px rgba(40,85,130,.34)) drop-shadow(0 0 0.8px rgba(40,95,150,.6))` |
+| `--header-grad` | `linear-gradient(180deg, #EAF5FF, #D2E8FB)` |
+| `--canvas-image` | `linear-gradient(180deg, #7FB6E6 0%, #9ECAED 50%, #BCDDF6 100%)` | キャンバス空グラデーション |
+| `--canvas-size` | `auto` |
+
+### キャンバス背景
+
+- 葉っぱ・デフォルト: `background-color: var(--field)` + ドットグリッド `radial-gradient(var(--field-dot) 1.4px, transparent 1.4px)` / `26px 26px`
+- 雲: `background-color: var(--field)` + 空グラデーション `linear-gradient(180deg, #7FB6E6 0%, #9ECAED 50%, #BCDDF6 100%)`
+- 右上に環境光グロー（`radial-gradient(circle, var(--ambient-1), transparent 68%)`）を重ねる
+
+### カード
+
+- `clip-path: var(--card-clip)` でスキン別形状（葉っぱ／角丸四角／雲）
+- `background: var(--card-fill)` でグラデーション塗り
+- `filter: var(--card-filter)` でドロップシャドウ
+- テキスト色: `color: var(--ink)`
+- ボーダーなし（影のみで立体感を表現）
+- 接続ターゲット時: フィルターに `drop-shadow(0 0 9px rgba(var(--accent-rgb),.85))` を追加
+
+### 接続線（SVG）
+
+- 通常: `stroke: var(--thread)`, strokeWidth 2
+- 選択時: `stroke: var(--dusk)`, strokeWidth 3
+
+### クリップパス形状
+
+モックアップの25点ポリゴンを参照（現行の12点ポリゴンより有機的）。今後のタスクで更新予定。
+
+### ヘッダー
+
+- `background: var(--header-grad)` でスキン別グラデーション
+- テキスト色: `var(--ink)`
+- 今後のタスクで実装予定

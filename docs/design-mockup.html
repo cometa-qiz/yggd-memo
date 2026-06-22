@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#003A17" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="紡" />
+<title>紡 — つむぐメモ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Old+Mincho:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#E7EFE7;
+    --ink-soft:#8DA593;
+    --paper:#173524;
+    --paper-edge:rgba(255,255,255,.06);
+    --field:#08160D;
+    --field-dot:rgba(150,210,160,.07);
+    --accent-rgb:46,167,99;
+    --dusk:#2EA763;
+    --dusk-soft:#6CC78F;
+    --night:#7FB89C;
+    --thread:#5E8369;
+    --line:rgba(170,220,180,.12);
+    --shadow:rgba(0,0,0,.5);
+    --chip-bg:#274236;
+    --chip-fg:#EAF4EC;
+    --placeholder:#6E8A76;
+    --hover:rgba(170,220,180,.07);
+    --glass:rgba(8,26,15,.82);
+    --base-green:#003A17;
+    --ease:cubic-bezier(.22,.61,.36,1);
+    --display:"Zen Old Mincho", "Hiragino Mincho ProN", serif;
+    --gothic:"Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    --leaf-clip:polygon(99.5% 1.7%, 96.9% 1.1%, 90.6% 6.0%, 81.1% 7.9%, 51.8% 0.4%, 40.8% 0.0%, 32.4% 2.1%, 23.9% 8.4%, 16.8% 18.3%, 10.5% 34.4%, 7.2% 52.8%, 6.3% 72.5%, 4.7% 79.2%, 0.5% 88.1%, 0.6% 95.0%, 2.8% 96.7%, 7.1% 87.7%, 12.1% 84.7%, 36.0% 96.6%, 49.1% 99.9%, 59.7% 98.3%, 71.5% 90.3%, 77.2% 83.3%, 83.9% 71.8%, 90.9% 54.3%, 97.8% 25.5%, 99.9% 8.6%);
+    --rect-clip:polygon(88.0% 0.0%, 84.1% 0.0%, 76.4% 0.0%, 64.8% 0.0%, 32.6% 0.0%, 21.0% 0.0%, 12.0% 0.0%, 2.1% 5.2%, 0.0% 18.4%, 0.0% 36.5%, 0.0% 57.1%, 0.0% 79.0%, 0.0% 85.4%, 2.7% 95.6%, 9.1% 99.7%, 12.0% 100.0%, 23.6% 100.0%, 30.0% 100.0%, 58.4% 100.0%, 72.5% 100.0%, 84.1% 100.0%, 97.9% 94.8%, 100.0% 85.4%, 100.0% 71.3%, 100.0% 50.6%, 100.0% 18.4%, 94.8% 2.1%);
+    --cloud-clip:polygon(71.0% 9.2%, 66.0% 4.7%, 60.5% 3.2%, 49.5% 7.6%, 43.4% 1.6%, 37.8% 0.0%, 28.3% 4.7%, 21.5% 16.1%, 18.3% 26.9%, 13.3% 28.5%, 7.9% 34.8%, 3.5% 47.5%, 2.3% 60.8%, 0.0% 68.7%, 0.6% 74.4%, 2.9% 79.7%, 13.3% 91.8%, 45.1% 99.7%, 63.1% 98.7%, 82.1% 92.7%, 94.6% 83.2%, 98.2% 77.5%, 99.8% 70.6%, 93.0% 39.2%, 86.8% 30.4%, 79.3% 28.8%, 76.2% 18.7%);
+    /* スキンで切り替わる項目（既定＝葉っぱ） */
+    --card-clip:var(--leaf-clip);
+    --card-pad:15px 42px 16px 30px;
+    --card-fill:linear-gradient(150deg, color-mix(in srgb, var(--paper) 84%, #79cf94 16%), var(--paper) 58%);
+    --card-filter:drop-shadow(0 3px 5px var(--shadow)) drop-shadow(0 0 1px rgba(150,210,160,.5));
+    --header-grad:linear-gradient(180deg, #0A4A22, var(--base-green));
+    --tabs-bg:#052013;
+    --ambient-1:rgba(46,167,99,.18);
+  }
+
+  /* ===== スキン：葉っぱ（既定＝:root の緑をそのまま使用） ===== */
+
+  /* ===== スキン：デフォルト（ニュートラルな暗色・角丸四角・藍色の線） ===== */
+  .skin-default{
+    --ink:#E8EAF2; --ink-soft:#9AA0B4;
+    --paper:#23262F; --paper-edge:rgba(255,255,255,.06);
+    --field:#14151A; --field-dot:rgba(185,193,225,.07);
+    --accent-rgb:124,140,240;
+    --dusk:#7C8CF0; --dusk-soft:#A6B2F6; --night:#9AA6DC;
+    --thread:#8089A8;
+    --line:rgba(190,200,230,.12); --shadow:rgba(0,0,0,.5);
+    --chip-bg:#343A4E; --chip-fg:#EEF0F8;
+    --placeholder:#777E92; --hover:rgba(190,200,230,.07);
+    --glass:rgba(20,21,26,.82);
+    --card-clip:var(--rect-clip);
+    --card-pad:14px 18px 15px 18px;
+    --card-fill:linear-gradient(150deg, color-mix(in srgb, var(--paper) 88%, #8c96d8 12%), var(--paper) 60%);
+    --card-filter:drop-shadow(0 3px 6px var(--shadow));
+    --header-grad:linear-gradient(180deg, #2A2D38, #1A1C24);
+    --tabs-bg:#1A1C24;
+    --ambient-1:rgba(124,140,240,.14);
+  }
+
+  /* ===== スキン：雲（明るい空・雲形・やわらかい青の線） ===== */
+  .skin-cloud{
+    --ink:#33475A; --ink-soft:#6E869B;
+    --paper:#FFFFFF; --paper-edge:rgba(40,80,120,.10);
+    --field:#9FCBEC; --field-dot:rgba(40,100,160,.12);
+    --accent-rgb:42,118,196;
+    --dusk:#2C7BC6; --dusk-soft:#7DB4E6; --night:#3F73A8;
+    --thread:#5E97CF;
+    --line:rgba(30,80,130,.20); --shadow:rgba(40,85,130,.34);
+    --chip-bg:#2F6FAE; --chip-fg:#FFFFFF;
+    --placeholder:#8AA8C2; --hover:rgba(40,110,170,.08);
+    --glass:rgba(245,251,255,.85);
+    --card-clip:var(--cloud-clip);
+    --card-pad:19px 32px 20px 32px;
+    --card-fill:linear-gradient(180deg, #FFFFFF, #E4F0FB);
+    --card-filter:drop-shadow(0 6px 11px var(--shadow)) drop-shadow(0 0 0.8px rgba(40,95,150,.6));
+    --header-grad:linear-gradient(180deg, #EAF5FF, #D2E8FB);
+    --tabs-bg:#DCEDFB;
+    --ambient-1:rgba(255,255,255,.6);
+  }
+  /* 雲スキンの背景は空のグラデーション（ドットなし） */
+  .skin-cloud #canvas{
+    background-color:var(--field);
+    background-image:linear-gradient(180deg, #7FB6E6 0%, #9ECAED 50%, #BCDDF6 100%);
+  }
+  .skin-cloud #canvas::before{ background:radial-gradient(circle, rgba(255,255,255,.55), transparent 64%); }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html{ height:100%; }
+  html,body{ margin:0; }
+  body{
+    font-family:var(--gothic);
+    color:var(--ink);
+    background:var(--field);
+    overflow:hidden;
+    height:100vh; height:100dvh;
+    -webkit-font-smoothing:antialiased;
+    -webkit-touch-callout:none;
+    display:flex; flex-direction:column;
+  }
+
+  /* ---------- ヘッダー＋クイック入力 ---------- */
+  header{
+    flex:0 0 auto;
+    padding:14px 18px 12px;
+    padding-top:calc(14px + env(safe-area-inset-top));
+    padding-left:calc(18px + env(safe-area-inset-left));
+    padding-right:calc(18px + env(safe-area-inset-right));
+    background:var(--header-grad);
+    border-bottom:1px solid var(--line);
+    z-index:30;
+  }
+  .brand{ display:flex; align-items:baseline; gap:10px; margin-bottom:11px; }
+  .skin-select{
+    margin-left:auto; align-self:center;
+    font-family:var(--gothic); font-size:12.5px; color:var(--ink);
+    background:var(--glass); border:1px solid var(--line); border-radius:9px;
+    padding:6px 28px 6px 11px; cursor:pointer; line-height:1.1;
+    -webkit-appearance:none; appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat; background-position:right 9px center;
+    transition:border-color .16s var(--ease);
+  }
+  .skin-select:focus{ outline:none; border-color:var(--dusk-soft); }
+  .brand .mark{
+    font-family:var(--display); font-size:25px; font-weight:600;
+    line-height:1; color:var(--ink);
+    position:relative;
+  }
+  .brand .mark::after{
+    content:""; position:absolute; right:-7px; top:-1px;
+    width:6px; height:6px; border-radius:50%;
+    background:var(--dusk);
+  }
+  .brand .sub{ font-size:12px; letter-spacing:.14em; color:var(--ink-soft); }
+
+  .add{ display:flex; gap:9px; }
+  .add input{
+    flex:1; min-width:0;
+    font-family:var(--gothic); font-size:16px; color:var(--ink);
+    padding:12px 15px; border:1px solid var(--line); border-radius:13px;
+    background:var(--paper);
+    transition:border-color .18s var(--ease), box-shadow .18s var(--ease);
+  }
+  .add input::placeholder{ color:var(--placeholder); }
+  .add input:focus{ outline:none; border-color:var(--dusk-soft); box-shadow:0 0 0 3px rgba(var(--accent-rgb),.20); }
+  .add button{
+    flex:0 0 auto; width:48px; border:none; border-radius:13px;
+    background:var(--dusk); color:#fff; font-size:24px; font-weight:400; line-height:1;
+    cursor:pointer;
+    transition:transform .16s var(--ease), background .16s var(--ease);
+  }
+  .add button:hover{ filter:brightness(1.08); }
+  .add button:active{ transform:scale(.93); }
+
+  /* ---------- タブ ---------- */
+  .tabs{
+    flex:0 0 auto; display:flex; gap:4px;
+    padding:8px 14px 0; background:var(--tabs-bg);
+    border-bottom:1px solid var(--line); z-index:20;
+  }
+  .tab{
+    appearance:none; border:none; background:none; cursor:pointer;
+    font-family:var(--gothic); font-size:14px; font-weight:500; color:var(--ink-soft);
+    padding:9px 16px 11px; border-radius:11px 11px 0 0; position:relative;
+    transition:color .18s var(--ease);
+  }
+  .tab .badge{
+    font-size:11px; margin-left:6px; padding:1px 7px; border-radius:9px;
+    background:rgba(170,220,180,.10); color:var(--ink-soft);
+  }
+  .tab.active{ color:var(--ink); }
+  .tab.active::after{
+    content:""; position:absolute; left:14px; right:14px; bottom:0; height:2.5px;
+    border-radius:2px; background:var(--dusk);
+    animation:underline .26s var(--ease);
+  }
+  @keyframes underline{ from{ transform:scaleX(.2); opacity:0 } to{ transform:scaleX(1); opacity:1 } }
+
+  /* ---------- ステージ ---------- */
+  .stage{ flex:1 1 auto; position:relative; overflow:hidden; }
+  .view{ position:absolute; inset:0; }
+  .view[hidden]{ display:none; }
+
+  /* キャンバス */
+  #canvas{
+    position:absolute; inset:0; overflow:hidden;
+    background-color:var(--field);
+    background-image:radial-gradient(var(--field-dot) 1.4px, transparent 1.4px);
+    background-size:26px 26px;
+    touch-action:none; cursor:grab;
+  }
+  #canvas.panning{ cursor:grabbing; }
+  /* 木もれ日のアンビエント */
+  #canvas::before{
+    content:""; position:absolute; top:-160px; right:-120px;
+    width:460px; height:460px; border-radius:50%;
+    background:radial-gradient(circle, var(--ambient-1), transparent 68%);
+    pointer-events:none;
+  }
+  #world{ position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform; }
+  #threads{ position:absolute; left:0; top:0; width:1px; height:1px; overflow:visible; pointer-events:none; }
+  #threads path.hit{ stroke:transparent; stroke-width:24; fill:none; pointer-events:stroke; cursor:pointer; }
+  #threads path.wire{
+    fill:none; stroke:var(--thread); stroke-width:2.4; stroke-linecap:round;
+    pointer-events:none; transition:stroke .2s var(--ease);
+  }
+  #threads g.sel path.wire{ stroke:var(--dusk); stroke-width:3; }
+  #threads path.temp{ fill:none; stroke:var(--dusk-soft); stroke-width:2.6; stroke-linecap:round; stroke-dasharray:2 8; pointer-events:none; }
+
+  .card{
+    position:absolute; min-width:150px; max-width:250px;
+    min-height:74px;
+    background:transparent; border:none; box-shadow:none;
+    padding:var(--card-pad);
+    display:flex; flex-direction:column; justify-content:center;
+    font-size:15px; line-height:1.5; color:var(--ink);
+    cursor:grab; user-select:none; touch-action:none;
+    transition:transform .04s linear, padding .42s var(--ease), max-width .42s var(--ease), min-height .42s var(--ease);
+    animation:cardIn .34s var(--ease);
+  }
+  @keyframes cardIn{ from{ opacity:0; transform:translateY(8px) scale(.95) } to{ opacity:1; transform:none } }
+
+  /* カードの形（背景レイヤー）— スキンで切替 */
+  .card .leaf{
+    position:absolute; inset:0; z-index:0;
+    background:var(--paper);
+    background:var(--card-fill);
+    clip-path:var(--card-clip);
+    filter:var(--card-filter);
+    transition:filter .2s var(--ease), clip-path .42s var(--ease), background .3s var(--ease);
+  }
+  /* 葉脈（葉っぱスキンのみ） */
+  .card .leaf::after{ content:""; display:none; }
+  .skin-leaf .card .leaf::after{
+    display:block; position:absolute; left:14%; top:50%; width:74%; height:1px;
+    background:linear-gradient(90deg, transparent, rgba(150,210,160,.30) 25%, rgba(150,210,160,.18) 70%, transparent);
+    transform:translateY(-2px) rotate(-3deg); transform-origin:left center; pointer-events:none;
+    transition:opacity .3s var(--ease);
+  }
+
+  .card .body{
+    position:relative; z-index:1;
+    white-space:pre-wrap; word-break:break-word;
+    overflow:hidden; max-height:4.5em;
+    transition:max-height .42s var(--ease);
+  }
+  .card.clamped{ cursor:zoom-in; }
+  .card.clamped .body{
+    -webkit-mask-image:linear-gradient(180deg,#000 76%,transparent);
+    mask-image:linear-gradient(180deg,#000 76%,transparent);
+  }
+  .card.clamped::after{
+    content:"⌄"; position:absolute; left:50%; bottom:6px; transform:translateX(-50%);
+    z-index:1; font-size:13px; line-height:1; color:var(--dusk-soft); opacity:.9; pointer-events:none;
+  }
+  .card .stamp{
+    position:relative; z-index:1;
+    margin-top:7px; font-size:10.5px; letter-spacing:.04em; color:var(--ink-soft);
+    font-variant-numeric:tabular-nums; opacity:.8;
+  }
+
+  /* クリックで角丸四角形に変形して全文表示 */
+  .card.expanded{
+    cursor:default; z-index:8;
+    padding:18px 20px 18px 20px; max-width:300px; min-height:0;
+  }
+  .card.expanded .leaf{ clip-path:var(--rect-clip); }
+  .card.expanded .leaf::after{ opacity:0; }
+  .card.expanded .body{ max-height:60em; -webkit-mask-image:none; mask-image:none; }
+  .card.expanded::after{ display:none; }
+
+  .card.selected .leaf{ filter:drop-shadow(0 3px 6px var(--shadow)) drop-shadow(0 0 8px rgba(var(--accent-rgb),.6)); }
+  .card.dragging{ cursor:grabbing; transform:scale(1.03); z-index:5; }
+  .card.dragging .leaf{ filter:drop-shadow(0 12px 22px rgba(0,0,0,.55)); }
+  .card.linktarget .leaf{ filter:drop-shadow(0 3px 6px var(--shadow)) drop-shadow(0 0 9px rgba(var(--accent-rgb),.85)); }
+
+  /* つなぎ手（ハンドル）＝葉の先端 */
+  .card .handle{
+    position:absolute; right:4px; top:8px; z-index:2;
+    width:18px; height:18px; border-radius:50%;
+    background:var(--paper); border:2px solid var(--thread);
+    cursor:crosshair; opacity:0; transition:opacity .18s var(--ease), border-color .18s var(--ease), transform .14s var(--ease);
+    touch-action:none;
+  }
+  .card .handle::after{ content:""; position:absolute; inset:4px; border-radius:50%; background:var(--dusk); transform:scale(0); transition:transform .16s var(--ease); }
+  .card:hover .handle, .card.selected .handle{ opacity:1; }
+  .card .handle:hover{ border-color:var(--dusk); transform:scale(1.18); }
+  .card .handle:hover::after{ transform:scale(1); }
+
+  /* 削除（葉の上端中央） */
+  .card .del{
+    position:absolute; top:-7px; left:50%; transform:translateX(-50%) scale(.7); z-index:2;
+    width:20px; height:20px; border-radius:50%;
+    background:var(--chip-bg); color:var(--chip-fg); border:none; cursor:pointer;
+    font-size:13px; line-height:20px; text-align:center; padding:0;
+    opacity:0; transition:opacity .16s var(--ease), transform .16s var(--ease), background .16s var(--ease);
+  }
+  .card.selected .del{ opacity:1; transform:translateX(-50%) scale(1); }
+  .card .del:hover{ background:var(--dusk); }
+
+  .card textarea{
+    position:relative; z-index:1;
+    width:100%; border:none; outline:none; resize:none; background:transparent;
+    font-family:var(--gothic); font-size:15px; line-height:1.5; color:var(--ink);
+    padding:0; margin:0; overflow:hidden;
+  }
+
+  /* 線を切るチップ */
+  .cut{
+    position:absolute; z-index:40; transform:translate(-50%,-50%) scale(.8);
+    display:flex; align-items:center; gap:5px;
+    background:var(--chip-bg); color:var(--chip-fg); border:none; cursor:pointer;
+    font-family:var(--gothic); font-size:12px; font-weight:500;
+    padding:6px 11px; border-radius:20px; box-shadow:0 4px 12px rgba(0,0,0,.45);
+    opacity:0; pointer-events:none; transition:opacity .16s var(--ease), transform .16s var(--ease);
+  }
+  .cut.show{ opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+  .cut:hover{ background:var(--dusk); }
+
+  /* キャンバスのコントロール */
+  .controls{
+    position:absolute; right:14px; bottom:16px; z-index:35;
+    display:flex; flex-direction:column; gap:7px; align-items:flex-end;
+  }
+  .controls .grp{ display:flex; flex-direction:column; background:var(--paper); border:1px solid var(--line); border-radius:13px; overflow:hidden; box-shadow:0 2px 8px var(--shadow); }
+  .controls button{
+    width:42px; height:40px; border:none; background:transparent; cursor:pointer;
+    font-size:19px; color:var(--ink); display:flex; align-items:center; justify-content:center;
+    transition:background .14s var(--ease);
+  }
+  .controls button + button{ border-top:1px solid var(--line); }
+  .controls button:hover{ background:var(--hover); }
+  .controls .recenter{ width:42px; height:42px; border-radius:13px; font-size:17px; box-shadow:0 2px 8px var(--shadow); border:1px solid var(--line); background:var(--paper); }
+
+  .count{
+    position:absolute; left:14px; bottom:18px; z-index:35;
+    font-size:12px; color:var(--ink-soft);
+    background:var(--glass); backdrop-filter:blur(3px);
+    padding:5px 11px; border-radius:20px; border:1px solid var(--line);
+  }
+
+  /* 空の状態 */
+  .empty{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:10px; text-align:center;
+    color:var(--ink-soft); pointer-events:none; padding:30px;
+  }
+  .empty .big{ font-family:var(--display); font-size:21px; color:var(--ink); }
+  .empty .small{ font-size:13.5px; line-height:1.7; }
+
+  /* ---------- リスト ---------- */
+  #list{ overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--field); }
+  .list-inner{ max-width:680px; margin:0 auto; padding:22px 20px 80px; }
+  .group{
+    background:var(--paper); border:1px solid var(--line); border-radius:16px;
+    padding:16px 18px 18px; margin-bottom:16px; box-shadow:0 1px 4px var(--shadow);
+    animation:cardIn .3s var(--ease);
+  }
+  .group h3{
+    margin:0 0 11px; font-family:var(--display); font-size:15px; font-weight:600;
+    color:var(--night); display:flex; align-items:center; gap:8px;
+  }
+  .group h3 .dot{ width:8px; height:8px; border-radius:50%; background:var(--dusk); flex:0 0 auto; }
+  .group h3 .n{ font-family:var(--gothic); font-size:11px; font-weight:400; color:var(--ink-soft); margin-left:auto; }
+  ul.tree{ list-style:none; margin:0; padding:0; }
+  ul.tree ul{ list-style:none; margin:3px 0 0; padding-left:18px; border-left:1.5px solid var(--line); }
+  ul.tree li{ position:relative; padding:4px 0 4px 16px; line-height:1.55; font-size:14.5px; }
+  ul.tree li::before{
+    content:""; position:absolute; left:0; top:13px; width:7px; height:7px;
+    border-radius:50%; background:var(--thread);
+  }
+  ul.tree li > .row{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  ul.tree li .t{ word-break:break-word; }
+  ul.tree li .d{ font-size:10.5px; color:var(--ink-soft); font-variant-numeric:tabular-nums; opacity:.75; }
+
+  .singles{ margin-top:6px; }
+  .singles h3{ color:var(--ink-soft); }
+  .singles h3 .dot{ background:var(--thread); }
+  .singles ul{ list-style:none; margin:0; padding:0; }
+  .singles li{ position:relative; padding:5px 0 5px 16px; font-size:14.5px; }
+  .singles li::before{ content:""; position:absolute; left:0; top:12px; width:6px; height:6px; border-radius:50%; background:var(--line); }
+  .singles li .d{ font-size:10.5px; color:var(--ink-soft); margin-left:8px; opacity:.75; font-variant-numeric:tabular-nums; }
+
+  .list-empty{ text-align:center; color:var(--ink-soft); padding:60px 20px; }
+  .list-empty .big{ font-family:var(--display); font-size:19px; color:var(--ink); margin-bottom:8px; }
+  .list-empty .small{ font-size:13.5px; line-height:1.7; }
+
+  /* エクスポートのツールバー */
+  .export-bar{
+    display:flex; align-items:center; gap:9px; margin-bottom:18px; flex-wrap:wrap;
+  }
+  .export-bar .lbl{ font-size:12px; color:var(--ink-soft); margin-right:2px; }
+  .export-bar button{
+    font-family:var(--gothic); font-size:13px; font-weight:500; color:var(--ink);
+    background:var(--paper); border:1px solid var(--line); border-radius:10px;
+    padding:8px 14px; cursor:pointer; display:flex; align-items:center; gap:6px;
+    transition:border-color .16s var(--ease), background .16s var(--ease);
+  }
+  .export-bar button:hover{ border-color:var(--dusk-soft); background:var(--hover); }
+  .export-bar button:active{ transform:scale(.97); }
+  .export-bar button .ic{ color:var(--dusk); font-weight:700; }
+
+  /* ---------- リストのドラッグで階層移動 ---------- */
+  ul.tree li > .row, .singles li > .row{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .grip{
+    flex:0 0 auto; cursor:grab; color:var(--ink-soft); opacity:.45;
+    font-size:13px; line-height:1; letter-spacing:-2px; align-self:center;
+    padding:3px 3px; margin-left:-4px; touch-action:none; user-select:none;
+    transition:opacity .15s var(--ease), color .15s var(--ease);
+  }
+  .group:hover .grip{ opacity:.75; }
+  .grip:hover{ color:var(--dusk); opacity:1; }
+  .row.drop-into{
+    outline:2px dashed var(--dusk); outline-offset:3px; border-radius:8px;
+    background:rgba(var(--accent-rgb),.12);
+  }
+  .rootzone{
+    display:none; align-items:center; justify-content:center;
+    position:absolute; top:10px; right:10px; z-index:45; max-width:64%;
+    padding:10px 14px; border:1.5px dashed var(--dusk-soft); border-radius:12px;
+    background:var(--glass); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);
+    color:var(--ink-soft); font-size:12.5px; line-height:1.4; text-align:center;
+    box-shadow:0 8px 22px rgba(0,0,0,.4);
+  }
+  body.dnd-on .rootzone{ display:flex; }
+  .rootzone.hot{ border-color:var(--dusk); color:var(--dusk); background:rgba(var(--accent-rgb),.16); }
+  .dnd-ghost{
+    position:fixed; z-index:9999; left:0; top:0; transform:translate(14px,10px);
+    max-width:240px; padding:8px 12px; border-radius:10px; pointer-events:none;
+    background:var(--paper); color:var(--ink); border:1px solid var(--dusk-soft);
+    box-shadow:0 12px 28px rgba(0,0,0,.5); font-size:14px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  body.dnd-on{ cursor:grabbing; }
+  body.dnd-on, body.dnd-on *{ user-select:none !important; }
+
+  @media (max-width:480px){
+    .brand .mark{ font-size:22px; }
+    .brand .sub{ display:none; }
+    .skin-select{ font-size:12px; padding:6px 26px 6px 10px; }
+    .brand{ margin-bottom:9px; }
+    header{ padding:11px 14px 10px; padding-top:calc(11px + env(safe-area-inset-top)); }
+    .add input{ font-size:16px; padding:11px 13px; }
+    .add button{ width:46px; }
+    .list-inner{ padding:18px 15px 90px; }
+    .count{ bottom:calc(14px + env(safe-area-inset-bottom)); left:calc(12px + env(safe-area-inset-left)); }
+    .controls{ right:calc(12px + env(safe-area-inset-right)); bottom:calc(14px + env(safe-area-inset-bottom)); }
+  }
+
+  /* タッチ端末：操作点を大きく・押しやすく */
+  @media (pointer:coarse){
+    .card, .card .handle, .card .del, .grip{ -webkit-touch-callout:none; }
+    /* つなぎ手（○）を常時うっすら表示＋拡大 */
+    .card .handle{ width:26px; height:26px; right:0; top:2px; opacity:.55; border-width:2px; }
+    .card.selected .handle{ opacity:1; }
+    .card .handle::after{ inset:6px; }
+    /* 削除を大きく */
+    .card .del{ width:28px; height:28px; line-height:28px; font-size:15px; top:-10px; }
+    .card.selected .del{ transform:translateX(-50%) scale(1); }
+    /* 線のタップ判定を広げる */
+    #threads path.hit{ stroke-width:34; }
+    /* リストのグリップを大きく */
+    .grip{ font-size:17px; padding:8px 8px; margin-left:-6px; opacity:.7; }
+    .group:hover .grip{ opacity:.7; }
+    /* キャンバスのコントロールを大きく */
+    .controls button{ width:50px; height:48px; font-size:22px; }
+    .controls .recenter{ width:50px; height:50px; font-size:20px; }
+    /* リスト項目を押しやすく */
+    ul.tree li{ padding-top:7px; padding-bottom:7px; }
+    .singles li{ padding-top:8px; padding-bottom:8px; }
+    /* 全文を開く葉カードのタップ領域確保 */
+    .cut{ padding:9px 15px; font-size:13px; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ animation-duration:.01ms !important; transition-duration:.05ms !important; }
+  }
+
+  /* ロゴ（ヘッダーのブランドマーク：マスクでスキン色に追従） */
+  :root{ --logo-mask:url("data:image/png;base64,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"); }
+  .brand{ align-items:center; }
+  .logo{
+    display:inline-block; width:34px; height:32px;
+    background-color:var(--ink);
+    -webkit-mask:var(--logo-mask) center / contain no-repeat;
+    mask:var(--logo-mask) center / contain no-repeat;
+  }
+  @media (max-width:480px){ .logo{ width:30px; height:28px; } }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo" role="img" aria-label="紡 つむぐメモ"></span>
+      <select id="skinSelect" class="skin-select" aria-label="デザインを切り替え">
+        <option value="default">デフォルト</option>
+        <option value="leaf">葉っぱ</option>
+        <option value="cloud">雲</option>
+      </select>
+    </div>
+    <div class="add">
+      <input id="addInput" type="text" placeholder="思いついたことをメモする…" autocomplete="off" enterkeyhint="done" />
+      <button id="addBtn" aria-label="メモを追加">＋</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="canvas">キャンバス</button>
+    <button class="tab" data-tab="list">リスト<span class="badge" id="listBadge">0</span></button>
+  </div>
+
+  <div class="stage">
+    <!-- キャンバス -->
+    <div class="view" id="canvasView">
+      <div id="canvas">
+        <div id="world">
+          <svg id="threads"></svg>
+          <!-- cards inserted here -->
+        </div>
+      </div>
+      <button class="cut" id="cutChip">✕ 切る</button>
+      <div class="empty" id="canvasEmpty">
+        <div class="big">まだ何もありません</div>
+        <div class="small">上の欄にメモを書いて「＋」。<br>カードのふちの○を引っぱると、メモ同士をつなげます。</div>
+      </div>
+      <div class="count" id="count">0 件</div>
+      <div class="controls">
+        <button class="recenter" id="recenter" title="中央に戻す">⊙</button>
+        <div class="grp">
+          <button id="zoomIn" title="拡大">＋</button>
+          <button id="zoomOut" title="縮小">－</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- リスト -->
+    <div class="view" id="list" hidden>
+      <div class="list-inner" id="listInner"></div>
+    </div>
+
+    <!-- ドラッグ中のみ右上に表示：ここにドロップで単独へ切り離す -->
+    <div class="rootzone" id="rootzone"><span>ここにドロップ → つながりを外して単独にする</span></div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- 状態 ---------- */
+  var state = { notes:[], links:[], view:{ x:0, y:0, s:1 } };
+  var selectedCard = null;
+  var selectedLink = null;
+  var KEY = "tsumugu-memo-v1";
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(raw){ var d = JSON.parse(raw); if(d && d.notes){ state = d; if(!state.view) state.view={x:0,y:0,s:1}; } }
+    }catch(e){ /* ファイル直開きでない環境では保存をスキップ */ }
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  /* ---------- DOM参照 ---------- */
+  var canvas   = document.getElementById('canvas');
+  var world    = document.getElementById('world');
+  var svg      = document.getElementById('threads');
+  var addInput = document.getElementById('addInput');
+  var cutChip  = document.getElementById('cutChip');
+  var countEl  = document.getElementById('count');
+  var emptyEl  = document.getElementById('canvasEmpty');
+  var SVGNS = "http://www.w3.org/2000/svg";
+
+  function getNote(id){ for(var i=0;i<state.notes.length;i++){ if(state.notes[i].id===id) return state.notes[i]; } return null; }
+
+  /* ---------- 日付フォーマット ---------- */
+  function fmt(ts){
+    var d = new Date(ts);
+    var p = function(n){ return (n<10?'0':'')+n; };
+    return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes());
+  }
+
+  /* ---------- 変換（ワールド⇔画面） ---------- */
+  function applyView(){
+    var v = state.view;
+    world.style.transform = 'translate('+v.x+'px,'+v.y+'px) scale('+v.s+')';
+    positionCutChip();
+  }
+
+  /* ---------- 描画：カード ---------- */
+  function buildCard(note){
+    var el = document.createElement('div');
+    el.className = 'card';
+    el.dataset.id = note.id;
+
+    var leaf = document.createElement('div');
+    leaf.className = 'leaf';
+
+    var body = document.createElement('div');
+    body.className = 'body';
+    body.textContent = note.text;
+
+    var stamp = document.createElement('div');
+    stamp.className = 'stamp';
+    stamp.textContent = fmt(note.createdAt);
+
+    var handle = document.createElement('div');
+    handle.className = 'handle';
+    handle.dataset.role = 'handle';
+
+    var del = document.createElement('button');
+    del.className = 'del';
+    del.dataset.role = 'del';
+    del.textContent = '✕';
+    del.setAttribute('aria-label','メモを削除');
+
+    el.appendChild(leaf); el.appendChild(body); el.appendChild(stamp); el.appendChild(handle); el.appendChild(del);
+    world.appendChild(el);
+    positionCard(el, note);
+    refreshClamp(el, body);
+    return el;
+  }
+  // 既定サイズに収まらない場合だけ .clamped を付ける（ボックスは広げない）
+  function refreshClamp(el, body){
+    body = body || el.querySelector('.body');
+    el.classList.remove('clamped');
+    if(body.scrollHeight - body.clientHeight > 2){ el.classList.add('clamped'); }
+  }
+  function positionCard(el, note){
+    el.style.left = note.x + 'px';
+    el.style.top  = note.y + 'px';
+  }
+  function cardEl(id){ return world.querySelector('.card[data-id="'+id+'"]'); }
+
+  function renderCards(){
+    // 既存カードを消して作り直す（数が多くなければ十分軽量）
+    var olds = world.querySelectorAll('.card');
+    for(var i=0;i<olds.length;i++) olds[i].remove();
+    for(var j=0;j<state.notes.length;j++) buildCard(state.notes[j]);
+    if(selectedCard){ var s = cardEl(selectedCard); if(s) s.classList.add('selected'); }
+    updateEmpty();
+  }
+
+  function updateEmpty(){
+    emptyEl.style.display = state.notes.length ? 'none' : 'flex';
+    countEl.textContent = state.notes.length + ' 件';
+  }
+
+  /* ---------- 描画：糸（つながり） ---------- */
+  // カード実寸を計測（非表示中で0になる場合は直近の有効値を使う）
+  var sizeCache = {};
+  function measure(id){
+    var el = cardEl(id);
+    var w = el ? el.offsetWidth : 0, h = el ? el.offsetHeight : 0;
+    var c = sizeCache[id] || { w:160, h:78 };
+    if(w>0) c.w = w;
+    if(h>0) c.h = h;
+    sizeCache[id] = c;
+    return { w:(w>0?w:c.w), h:(h>0?h:c.h) };
+  }
+  function centerOf(note){
+    var s = measure(note.id);
+    return { x: note.x + s.w/2, y: note.y + s.h/2 };
+  }
+  function curve(a, b){
+    // ゆるやかなベジェ曲線（手で引いた線の感触）
+    var mx = (a.x+b.x)/2, my=(a.y+b.y)/2;
+    var dx = b.x-a.x, dy=b.y-a.y;
+    var off = Math.min(40, Math.hypot(dx,dy)*0.16);
+    // 垂直方向に少しふくらませる
+    var nx = -dy, ny = dx, len = Math.hypot(nx,ny)||1;
+    var cx = mx + (nx/len)*off, cy = my + (ny/len)*off;
+    return 'M '+a.x+' '+a.y+' Q '+cx+' '+cy+' '+b.x+' '+b.y;
+  }
+  function drawThreads(){
+    // tempを除いて作り直す
+    var keep = svg.querySelector('.temp');
+    svg.innerHTML = '';
+    if(keep) svg.appendChild(keep);
+    for(var i=0;i<state.links.length;i++){
+      var lk = state.links[i];
+      var na = getNote(lk.a), nb = getNote(lk.b);
+      if(!na || !nb) continue;
+      var d = curve(centerOf(na), centerOf(nb));
+      var g = document.createElementNS(SVGNS,'g');
+      g.dataset.id = lk.id;
+      if(selectedLink === lk.id) g.setAttribute('class','sel');
+      var hit = document.createElementNS(SVGNS,'path');
+      hit.setAttribute('class','hit'); hit.setAttribute('d', d); hit.dataset.role='thread'; hit.dataset.id=lk.id;
+      var wire = document.createElementNS(SVGNS,'path');
+      wire.setAttribute('class','wire'); wire.setAttribute('d', d);
+      g.appendChild(hit); g.appendChild(wire);
+      svg.appendChild(g);
+    }
+    positionCutChip();
+  }
+
+  // つなげた瞬間、夕陽の光が糸を渡るアニメ
+  function sparkAlong(d){
+    if(window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+    var p = document.createElementNS(SVGNS,'path');
+    p.setAttribute('d', d); p.setAttribute('fill','none');
+    p.setAttribute('stroke','var(--dusk)'); p.setAttribute('stroke-width','3.4');
+    p.setAttribute('stroke-linecap','round');
+    var L = 9999;
+    p.setAttribute('stroke-dasharray','26 '+L);
+    p.style.transition = 'none';
+    svg.appendChild(p);
+    p.setAttribute('stroke-dashoffset', L);
+    // force reflow
+    p.getBoundingClientRect();
+    p.style.transition = 'stroke-dashoffset .55s var(--ease), opacity .3s ease';
+    p.setAttribute('stroke-dashoffset', -26);
+    setTimeout(function(){ p.style.opacity='0'; setTimeout(function(){ p.remove(); }, 300); }, 480);
+  }
+
+  /* ---------- メモ追加 ---------- */
+  /* ---------- 重なり防止 ---------- */
+  function cardSize(id){ return measure(id); }
+  function overlapsAny(x, y, w, h, ignore, gap){
+    gap = (gap==null)?12:gap;
+    for(var i=0;i<state.notes.length;i++){
+      var n = state.notes[i]; if(n.id===ignore) continue;
+      var s = cardSize(n.id);
+      if(x < n.x + s.w + gap && x + w + gap > n.x && y < n.y + s.h + gap && y + h + gap > n.y) return true;
+    }
+    return false;
+  }
+  function findFreeSpot(x, y, w, h, ignore){
+    if(!overlapsAny(x, y, w, h, ignore)) return { x:Math.round(x), y:Math.round(y) };
+    var step = 20;
+    for(var r=1; r<240; r++){
+      var rad = r*step;
+      for(var a=0; a<18; a++){
+        var ang = a/18*Math.PI*2;
+        var cx = x + Math.cos(ang)*rad;
+        var cy = y + Math.sin(ang)*rad*0.66; // 横方向を少し優先
+        if(!overlapsAny(cx, cy, w, h, ignore)) return { x:Math.round(cx), y:Math.round(cy) };
+      }
+    }
+    return { x:Math.round(x), y:Math.round(y) };
+  }
+  function snapCardTo(el, note, nx, ny){
+    el.style.transition = 'left .24s var(--ease), top .24s var(--ease)';
+    note.x = nx; note.y = ny; positionCard(el, note);
+    var t0 = performance.now();
+    (function f(now){ drawThreads(); if(now - t0 < 280) requestAnimationFrame(f); })(t0);
+    setTimeout(function(){ el.style.transition=''; save(); }, 260);
+  }
+  function resolveCardOverlap(id){
+    var note = getNote(id), el = cardEl(id);
+    if(!note || !el){ save(); return; }
+    var s = cardSize(id);
+    if(overlapsAny(note.x, note.y, s.w, s.h, id)){
+      var spot = findFreeSpot(note.x, note.y, s.w, s.h, id);
+      snapCardTo(el, note, spot.x, spot.y);
+    } else { save(); }
+  }
+
+  function viewportCenterWorld(){
+    var r = canvas.getBoundingClientRect();
+    var v = state.view;
+    return { x:(r.width/2 - v.x)/v.s, y:(r.height/2 - v.y)/v.s };
+  }
+  function addNote(text){
+    text = (text||'').trim();
+    if(!text) return;
+    closeReader();
+    var c = viewportCenterWorld();
+    var note = { id:uid(), text:text, x:Math.round(c.x-80), y:Math.round(c.y-39), createdAt:Date.now() };
+    state.notes.push(note);
+    var el = buildCard(note);
+    // 既存メモと重ならない位置へ
+    var s = cardSize(note.id);
+    var spot = findFreeSpot(note.x, note.y, s.w, s.h, note.id);
+    note.x = spot.x; note.y = spot.y; positionCard(el, note);
+    updateEmpty(); save(); refreshBadge();
+    // 追加直後に軽く選択状態へ
+    select(note.id);
+  }
+
+  /* ---------- 選択 ---------- */
+  function select(id){
+    clearLinkSel();
+    if(selectedCard && selectedCard!==id){ var prev = cardEl(selectedCard); if(prev) prev.classList.remove('selected'); }
+    selectedCard = id;
+    var el = cardEl(id); if(el) el.classList.add('selected');
+  }
+  function clearCardSel(){
+    if(selectedCard){ var el=cardEl(selectedCard); if(el) el.classList.remove('selected'); selectedCard=null; }
+    closeReader();
+  }
+  function clearLinkSel(){
+    if(selectedLink){ selectedLink=null; drawThreads(); }
+    cutChip.classList.remove('show');
+  }
+
+  /* ---------- クリックで角丸長方形に変形して全文表示 ---------- */
+  var expandedCard = null;
+  function expandCard(id){
+    if(expandedCard && expandedCard!==id) collapseCard();
+    var el = cardEl(id); if(!el) return;
+    expandedCard = id;
+    el.classList.add('expanded');
+    // 変形に合わせて糸の端点を追従
+    var t0 = performance.now();
+    (function follow(now){
+      drawThreads();
+      if(now - t0 < 460 && expandedCard===id) requestAnimationFrame(follow);
+    })(t0);
+  }
+  function collapseCard(){
+    if(!expandedCard) return;
+    var el = cardEl(expandedCard); if(el) el.classList.remove('expanded');
+    expandedCard = null;
+    var t0 = performance.now();
+    (function follow(now){
+      drawThreads();
+      if(now - t0 < 460) requestAnimationFrame(follow);
+    })(t0);
+  }
+  // 互換のため旧名を残す（呼び出し箇所はそのまま動く）
+  function closeReader(){ collapseCard(); }
+
+  /* ---------- 削除 ---------- */
+  function deleteNote(id){
+    state.notes = state.notes.filter(function(n){ return n.id!==id; });
+    state.links = state.links.filter(function(l){ return l.a!==id && l.b!==id; });
+    if(selectedCard===id) selectedCard=null;
+    var el = cardEl(id);
+    if(el){ el.style.transition='opacity .18s, transform .18s'; el.style.opacity='0'; el.style.transform='scale(.9)';
+      setTimeout(function(){ el.remove(); drawThreads(); }, 160); }
+    updateEmpty(); save(); refreshBadge();
+  }
+  function deleteLink(id){
+    state.links = state.links.filter(function(l){ return l.id!==id; });
+    clearLinkSel(); drawThreads(); save(); refreshBadge();
+  }
+
+  /* ---------- リンク作成 ---------- */
+  function linkExists(a,b){
+    return state.links.some(function(l){ return (l.a===a&&l.b===b)||(l.a===b&&l.b===a); });
+  }
+  function createLink(a,b){
+    if(a===b || linkExists(a,b)) return false;
+    var id = uid();
+    state.links.push({ id:id, a:a, b:b });
+    drawThreads(); save(); refreshBadge();
+    var na=getNote(a), nb=getNote(b);
+    if(na&&nb) sparkAlong(curve(centerOf(na),centerOf(nb)));
+    return true;
+  }
+
+  /* ---------- 編集（ダブルタップ／ダブルクリック） ---------- */
+  function editNote(id){
+    var el = cardEl(id); var note = getNote(id);
+    if(!el||!note) return;
+    var body = el.querySelector('.body');
+    var ta = document.createElement('textarea');
+    ta.value = note.text;
+    body.replaceWith(ta);
+    var resize = function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; };
+    resize();
+    ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.addEventListener('input', function(){ resize(); drawThreads(); });
+    function commit(){
+      var v = ta.value.trim();
+      if(v){ note.text=v; } // 空なら元のまま
+      save();
+      renderCards(); drawThreads(); refreshBadge();
+    }
+    ta.addEventListener('blur', commit);
+    ta.addEventListener('keydown', function(ev){
+      if(ev.key==='Enter' && !ev.shiftKey){ ev.preventDefault(); ta.blur(); }
+      if(ev.key==='Escape'){ ta.value=note.text; ta.blur(); }
+      ev.stopPropagation();
+    });
+    // textarea上のポインタ操作はドラッグに渡さない
+    ta.addEventListener('pointerdown', function(ev){ ev.stopPropagation(); });
+  }
+
+  /* ---------- ポインタ操作（委譲） ---------- */
+  var lastTap = { id:null, t:0 };
+
+  canvas.addEventListener('pointerdown', function(e){
+    var t = e.target;
+    var handle = t.dataset && t.dataset.role==='handle' ? t : (t.closest ? t.closest('.handle') : null);
+    var del    = t.dataset && t.dataset.role==='del' ? t : null;
+    var thread = (t.dataset && t.dataset.role==='thread') ? t : null;
+    var card   = t.closest ? t.closest('.card') : null;
+
+    if(del){ e.preventDefault(); deleteNote(card.dataset.id); return; }
+    if(handle && card){ e.preventDefault(); beginConnect(card, e); return; }
+    if(thread){ e.preventDefault(); selectLink(thread.dataset.id); return; }
+    if(card){ e.preventDefault(); beginMove(card, e); return; }
+    // 何もない場所 → パン / ピンチ、選択解除
+    clearCardSel(); clearLinkSel();
+    beginPanPinch(e);
+  });
+
+  // カードの移動
+  function beginMove(card, e){
+    var id = card.dataset.id; var note = getNote(id);
+    var sx=e.clientX, sy=e.clientY, ox=note.x, oy=note.y, moved=false;
+    card.setPointerCapture(e.pointerId);
+    card.classList.add('dragging');
+    function mv(ev){
+      if(ev.pointerId!==e.pointerId) return;
+      var dx=(ev.clientX-sx), dy=(ev.clientY-sy);
+      if(Math.abs(dx)+Math.abs(dy)>4){ if(!moved) closeReader(); moved=true; }
+      note.x = Math.round(ox + dx/state.view.s);
+      note.y = Math.round(oy + dy/state.view.s);
+      positionCard(card, note);
+      drawThreads();
+    }
+    function up(ev){
+      if(ev.pointerId!==e.pointerId) return;
+      try{ card.releasePointerCapture(e.pointerId); }catch(_){}
+      card.classList.remove('dragging');
+      card.removeEventListener('pointermove',mv);
+      card.removeEventListener('pointerup',up);
+      card.removeEventListener('pointercancel',up);
+      if(!moved){
+        // タップ：選択。300ms以内の2回で編集
+        var now = Date.now();
+        if(lastTap.id===id && now-lastTap.t<320){ lastTap.id=null; closeReader(); editNote(id); }
+        else {
+          lastTap={ id:id, t:now }; select(id);
+          // 収まりきらないメモはクリックで角丸四角に変形して全文表示
+          if(card.classList.contains('clamped')) expandCard(id); else collapseCard();
+        }
+      } else { resolveCardOverlap(id); }
+    }
+    card.addEventListener('pointermove',mv);
+    card.addEventListener('pointerup',up);
+    card.addEventListener('pointercancel',up);
+  }
+
+  // つなぐ（ハンドルからドラッグ）
+  function beginConnect(card, e){
+    closeReader();
+    var id = card.dataset.id; var note = getNote(id);
+    var temp = document.createElementNS(SVGNS,'path');
+    temp.setAttribute('class','temp');
+    svg.appendChild(temp);
+    card.setPointerCapture(e.pointerId);
+    var lastTarget = null;
+    function worldFromEvent(ev){
+      var r = canvas.getBoundingClientRect(); var v=state.view;
+      return { x:(ev.clientX-r.left - v.x)/v.s, y:(ev.clientY-r.top - v.y)/v.s };
+    }
+    function findCardUnder(ev){
+      for(var i=state.notes.length-1;i>=0;i--){
+        var n=state.notes[i]; if(n.id===id) continue;
+        var el=cardEl(n.id); if(!el) continue;
+        var rc=el.getBoundingClientRect();
+        if(ev.clientX>=rc.left&&ev.clientX<=rc.right&&ev.clientY>=rc.top&&ev.clientY<=rc.bottom) return el;
+      }
+      return null;
+    }
+    function mv(ev){
+      if(ev.pointerId!==e.pointerId) return;
+      var a = centerOf(note);
+      var w = worldFromEvent(ev);
+      temp.setAttribute('d', 'M '+a.x+' '+a.y+' L '+w.x+' '+w.y);
+      var tgt = findCardUnder(ev);
+      if(lastTarget && lastTarget!==tgt) lastTarget.classList.remove('linktarget');
+      if(tgt) tgt.classList.add('linktarget');
+      lastTarget = tgt;
+    }
+    function up(ev){
+      if(ev.pointerId!==e.pointerId) return;
+      try{ card.releasePointerCapture(e.pointerId); }catch(_){}
+      card.removeEventListener('pointermove',mv);
+      card.removeEventListener('pointerup',up);
+      card.removeEventListener('pointercancel',up);
+      if(lastTarget) lastTarget.classList.remove('linktarget');
+      var tgt = findCardUnder(ev);
+      temp.remove();
+      if(tgt) createLink(id, tgt.dataset.id);
+    }
+    card.addEventListener('pointermove',mv);
+    card.addEventListener('pointerup',up);
+    card.addEventListener('pointercancel',up);
+  }
+
+  // パン＆ピンチズーム
+  var pointers = {}; var panStart=null; var pinchStart=null;
+  function beginPanPinch(e){
+    pointers[e.pointerId] = { x:e.clientX, y:e.clientY };
+    var ids = Object.keys(pointers);
+    if(ids.length===1){
+      canvas.classList.add('panning');
+      panStart = { x:e.clientX, y:e.clientY, vx:state.view.x, vy:state.view.y };
+    } else if(ids.length===2){
+      panStart=null;
+      var a=pointers[ids[0]], b=pointers[ids[1]];
+      pinchStart = {
+        dist: Math.hypot(a.x-b.x, a.y-b.y),
+        cx:(a.x+b.x)/2, cy:(a.y+b.y)/2,
+        s:state.view.s, vx:state.view.x, vy:state.view.y
+      };
+    }
+    canvas.setPointerCapture(e.pointerId);
+  }
+  canvas.addEventListener('pointermove', function(e){
+    if(!pointers[e.pointerId]) return;
+    pointers[e.pointerId]={ x:e.clientX, y:e.clientY };
+    var ids=Object.keys(pointers);
+    if(ids.length===1 && panStart){
+      state.view.x = panStart.vx + (e.clientX-panStart.x);
+      state.view.y = panStart.vy + (e.clientY-panStart.y);
+      applyView();
+    } else if(ids.length>=2 && pinchStart){
+      var a=pointers[ids[0]], b=pointers[ids[1]];
+      var dist=Math.hypot(a.x-b.x,a.y-b.y);
+      var f=dist/(pinchStart.dist||1);
+      var ns=Math.max(0.35, Math.min(2.4, pinchStart.s*f));
+      var r=canvas.getBoundingClientRect();
+      var cx=pinchStart.cx-r.left, cy=pinchStart.cy-r.top;
+      // ピンチ中心を固定
+      state.view.s=ns;
+      state.view.x=cx - (cx-pinchStart.vx)*(ns/pinchStart.s);
+      state.view.y=cy - (cy-pinchStart.vy)*(ns/pinchStart.s);
+      applyView();
+    }
+  });
+  function endPointer(e){
+    if(pointers[e.pointerId]){ delete pointers[e.pointerId]; }
+    try{ canvas.releasePointerCapture(e.pointerId); }catch(_){}
+    var ids=Object.keys(pointers);
+    if(ids.length<2) pinchStart=null;
+    if(ids.length===0){ canvas.classList.remove('panning'); panStart=null; save(); }
+    else if(ids.length===1){
+      var only=pointers[ids[0]];
+      panStart={ x:only.x, y:only.y, vx:state.view.x, vy:state.view.y };
+    }
+  }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+
+  // ホイールズーム（PC）
+  canvas.addEventListener('wheel', function(e){
+    e.preventDefault();
+    closeReader();
+    var r=canvas.getBoundingClientRect();
+    var cx=e.clientX-r.left, cy=e.clientY-r.top;
+    var f=Math.exp(-e.deltaY*0.0014);
+    var ns=Math.max(0.35, Math.min(2.4, state.view.s*f));
+    state.view.x=cx-(cx-state.view.x)*(ns/state.view.s);
+    state.view.y=cy-(cy-state.view.y)*(ns/state.view.s);
+    state.view.s=ns;
+    applyView(); save();
+  }, { passive:false });
+
+  /* ---------- 糸の選択と切断 ---------- */
+  function selectLink(id){
+    clearCardSel();
+    selectedLink = id;
+    drawThreads();
+    positionCutChip();
+  }
+  function positionCutChip(){
+    if(!selectedLink){ cutChip.classList.remove('show'); return; }
+    var lk = state.links.filter(function(l){ return l.id===selectedLink; })[0];
+    if(!lk){ cutChip.classList.remove('show'); return; }
+    var na=getNote(lk.a), nb=getNote(lk.b); if(!na||!nb){ cutChip.classList.remove('show'); return; }
+    var a=centerOf(na), b=centerOf(nb);
+    var mw={ x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
+    var v=state.view;
+    var sx=v.x+mw.x*v.s, sy=v.y+mw.y*v.s;
+    cutChip.style.left=sx+'px'; cutChip.style.top=sy+'px';
+    cutChip.classList.add('show');
+  }
+  cutChip.addEventListener('click', function(){ if(selectedLink) deleteLink(selectedLink); });
+
+  /* ---------- コントロール ---------- */
+  function zoomAt(f){
+    closeReader();
+    var r=canvas.getBoundingClientRect();
+    var cx=r.width/2, cy=r.height/2;
+    var ns=Math.max(0.35, Math.min(2.4, state.view.s*f));
+    state.view.x=cx-(cx-state.view.x)*(ns/state.view.s);
+    state.view.y=cy-(cy-state.view.y)*(ns/state.view.s);
+    state.view.s=ns; applyView(); save();
+  }
+  document.getElementById('zoomIn').addEventListener('click', function(){ zoomAt(1.2); });
+  document.getElementById('zoomOut').addEventListener('click', function(){ zoomAt(1/1.2); });
+  document.getElementById('recenter').addEventListener('click', function(){
+    closeReader();
+    if(!state.notes.length){ state.view={x:0,y:0,s:1}; applyView(); save(); return; }
+    // 全カードが収まるように中央寄せ
+    var minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    state.notes.forEach(function(n){
+      var el=cardEl(n.id); var w=el?el.offsetWidth:110, h=el?el.offsetHeight:54;
+      minX=Math.min(minX,n.x); minY=Math.min(minY,n.y);
+      maxX=Math.max(maxX,n.x+w); maxY=Math.max(maxY,n.y+h);
+    });
+    var r=canvas.getBoundingClientRect();
+    var pad=60;
+    var sx=(r.width-pad*2)/(maxX-minX||1), sy=(r.height-pad*2)/(maxY-minY||1);
+    var ns=Math.max(0.35, Math.min(1.4, Math.min(sx,sy)));
+    state.view.s=ns;
+    state.view.x=(r.width-(maxX-minX)*ns)/2 - minX*ns;
+    state.view.y=(r.height-(maxY-minY)*ns)/2 - minY*ns;
+    applyView(); save();
+  });
+
+  /* ---------- 追加ボタン ---------- */
+  function submitAdd(){ addNote(addInput.value); addInput.value=''; addInput.focus(); }
+  document.getElementById('addBtn').addEventListener('click', submitAdd);
+  addInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitAdd(); } });
+
+  /* ---------- タブ ---------- */
+  function refreshAllClamps(){
+    var cards=world.querySelectorAll('.card');
+    for(var i=0;i<cards.length;i++) refreshClamp(cards[i]);
+  }
+  var tabs=document.querySelectorAll('.tab');
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      closeReader();
+      tabs.forEach(function(t){ t.classList.remove('active'); });
+      tab.classList.add('active');
+      var which=tab.dataset.tab;
+      document.getElementById('canvasView').hidden = which!=='canvas';
+      document.getElementById('list').hidden = which!=='list';
+      if(which==='list') renderList();
+      else { refreshAllClamps(); drawThreads(); }
+    });
+  });
+
+  /* ---------- リスト（つながりを箇条書きに） ---------- */
+  function refreshBadge(){
+    var n = connectedGroups().filter(function(g){ return g.length>1; }).length;
+    document.getElementById('listBadge').textContent = n;
+  }
+  function connectedGroups(){
+    var adj={}; state.notes.forEach(function(n){ adj[n.id]=[]; });
+    state.links.forEach(function(l){ if(adj[l.a]&&adj[l.b]){ adj[l.a].push(l.b); adj[l.b].push(l.a); } });
+    var seen={}, groups=[];
+    state.notes.forEach(function(n){
+      if(seen[n.id]) return;
+      var stack=[n.id], comp=[];
+      seen[n.id]=true;
+      while(stack.length){
+        var cur=stack.pop(); comp.push(cur);
+        adj[cur].forEach(function(nb){ if(!seen[nb]){ seen[nb]=true; stack.push(nb); } });
+      }
+      groups.push(comp);
+    });
+    return groups;
+  }
+  function buildTree(ids){
+    // 最も古いメモを根に、BFSで枝分かれの形に
+    var set={}; ids.forEach(function(i){ set[i]=true; });
+    var adj={}; ids.forEach(function(i){ adj[i]=[]; });
+    state.links.forEach(function(l){ if(set[l.a]&&set[l.b]){ adj[l.a].push(l.b); adj[l.b].push(l.a); } });
+    var root=ids.slice().sort(function(a,b){ return getNote(a).createdAt-getNote(b).createdAt; })[0];
+    var seen={}; seen[root]=true;
+    function node(id){
+      var children=[];
+      adj[id].slice().sort(function(a,b){ return getNote(a).createdAt-getNote(b).createdAt; }).forEach(function(nb){
+        if(!seen[nb]){ seen[nb]=true; children.push(node(nb)); }
+      });
+      return { id:id, children:children };
+    }
+    return node(root);
+  }
+  function renderNode(node){
+    var li=document.createElement('li');
+    li.dataset.id = node.id;
+    var n=getNote(node.id);
+    var row=document.createElement('div'); row.className='row';
+    var grip=document.createElement('span'); grip.className='grip'; grip.textContent='⠿'; grip.title='ドラッグで階層を移動';
+    var t=document.createElement('span'); t.className='t'; t.textContent=n.text;
+    var d=document.createElement('span'); d.className='d'; d.textContent=fmt(n.createdAt);
+    row.appendChild(grip); row.appendChild(t); row.appendChild(d); li.appendChild(row);
+    if(node.children.length){
+      var ul=document.createElement('ul');
+      node.children.forEach(function(c){ ul.appendChild(renderNode(c)); });
+      li.appendChild(ul);
+    }
+    return li;
+  }
+
+  /* ---------- 階層の解析と再配線（リストのドラッグ用） ---------- */
+  function adjacencyAll(){
+    var adj={}; state.notes.forEach(function(n){ adj[n.id]=[]; });
+    state.links.forEach(function(l){ if(adj[l.a]&&adj[l.b]){ adj[l.a].push(l.b); adj[l.b].push(l.a); } });
+    return adj;
+  }
+  function componentOf(id){
+    var adj=adjacencyAll(), seen={}, st=[id], comp=[]; seen[id]=true;
+    while(st.length){ var c=st.pop(); comp.push(c); adj[c].forEach(function(nb){ if(!seen[nb]){ seen[nb]=true; st.push(nb); } }); }
+    return comp;
+  }
+  function treeParents(comp){
+    var set={}; comp.forEach(function(i){ set[i]=true; });
+    var adj={}; comp.forEach(function(i){ adj[i]=[]; });
+    state.links.forEach(function(l){ if(set[l.a]&&set[l.b]){ adj[l.a].push(l.b); adj[l.b].push(l.a); } });
+    var root=comp.slice().sort(function(a,b){ return getNote(a).createdAt-getNote(b).createdAt; })[0];
+    var parent={}; parent[root]=null; var seen={}; seen[root]=true; var q=[root];
+    while(q.length){
+      var c=q.shift();
+      adj[c].sort(function(a,b){ return getNote(a).createdAt-getNote(b).createdAt; }).forEach(function(nb){
+        if(!seen[nb]){ seen[nb]=true; parent[nb]=c; q.push(nb); }
+      });
+    }
+    return parent;
+  }
+  function parentOf(id){ return treeParents(componentOf(id))[id]; }
+  function descendantsOf(id){
+    var comp=componentOf(id), parent=treeParents(comp), set={};
+    comp.forEach(function(nid){
+      var c=nid, guard=0;
+      while(c!=null && guard++<99999){ if(c===id){ set[nid]=true; break; } c=parent[c]; }
+    });
+    set[id]=true; return set;
+  }
+  function removeLinkBetween(a,b){
+    state.links = state.links.filter(function(l){ return !((l.a===a&&l.b===b)||(l.a===b&&l.b===a)); });
+  }
+  // childId を newParentId の子にする（newParentId が null なら親から切り離して単独に）
+  function reparent(childId, newParentId){
+    if(newParentId===childId) return;
+    if(newParentId!=null){
+      var desc=descendantsOf(childId);
+      if(desc[newParentId]) return;            // 自分の子孫の下には移動できない
+    }
+    var P=parentOf(childId);
+    if(newParentId===P) return;                // 変化なし
+    if(P!=null) removeLinkBetween(P, childId); // 今の親との線を外す
+    if(newParentId!=null && !linkExists(newParentId, childId)){
+      state.links.push({ id:uid(), a:newParentId, b:childId });
+    }
+    save(); drawThreads(); refreshBadge(); renderList();
+  }
+  function renderList(){
+    var wrap=document.getElementById('listInner');
+    wrap.innerHTML='';
+    var groups=connectedGroups();
+    var linked=groups.filter(function(g){ return g.length>1; });
+    var singles=groups.filter(function(g){ return g.length===1; }).map(function(g){ return g[0]; });
+
+    if(!state.notes.length){
+      wrap.innerHTML='<div class="list-empty"><div class="big">まだつながりはありません</div>'+
+        '<div class="small">キャンバスでメモを書き、○を引っぱってつなげると<br>ここに箇条書きとして集まります。</div></div>';
+      return;
+    }
+
+    // つながりグループ（新しい更新が上に来るよう、最大createdAtで降順）
+    linked.sort(function(a,b){
+      var ma=Math.max.apply(null,a.map(function(i){return getNote(i).createdAt;}));
+      var mb=Math.max.apply(null,b.map(function(i){return getNote(i).createdAt;}));
+      return mb-ma;
+    });
+
+    // 書き出しツールバー
+    var bar=document.createElement('div'); bar.className='export-bar';
+    var lbl=document.createElement('span'); lbl.className='lbl'; lbl.textContent='箇条書きを書き出す';
+    var bCsv=document.createElement('button'); bCsv.innerHTML='<span class="ic">▤</span> CSV';
+    var bJson=document.createElement('button'); bJson.innerHTML='<span class="ic">{}</span> JSON';
+    bCsv.addEventListener('click', exportCSV);
+    bJson.addEventListener('click', exportJSON);
+    bar.appendChild(lbl); bar.appendChild(bCsv); bar.appendChild(bJson);
+    wrap.appendChild(bar);
+
+    linked.forEach(function(g){
+      var box=document.createElement('div'); box.className='group';
+      var h=document.createElement('h3');
+      h.innerHTML='<span class="dot"></span>つながり<span class="n">'+g.length+' 件</span>';
+      box.appendChild(h);
+      var ul=document.createElement('ul'); ul.className='tree';
+      ul.appendChild(renderNode(buildTree(g)));
+      box.appendChild(ul);
+      wrap.appendChild(box);
+    });
+
+    if(singles.length){
+      singles.sort(function(a,b){ return getNote(b).createdAt-getNote(a).createdAt; });
+      var box=document.createElement('div'); box.className='group singles';
+      var h=document.createElement('h3'); h.innerHTML='<span class="dot"></span>単独のメモ<span class="n">'+singles.length+' 件</span>';
+      box.appendChild(h);
+      var ul=document.createElement('ul');
+      singles.forEach(function(id){
+        var n=getNote(id);
+        var li=document.createElement('li'); li.dataset.id=id;
+        var row=document.createElement('div'); row.className='row';
+        var grip=document.createElement('span'); grip.className='grip'; grip.textContent='⠿'; grip.title='ドラッグでつなげる／階層を移動';
+        var t=document.createElement('span'); t.className='t'; t.textContent=n.text;
+        var d=document.createElement('span'); d.className='d'; d.textContent=fmt(n.createdAt);
+        row.appendChild(grip); row.appendChild(t); row.appendChild(d); li.appendChild(row);
+        ul.appendChild(li);
+      });
+      box.appendChild(ul); wrap.appendChild(box);
+    }
+  }
+
+  /* ---------- エクスポート（リストの箇条書きを書き出す） ---------- */
+  function orderedLists(){
+    var groups=connectedGroups();
+    var linked=groups.filter(function(g){ return g.length>1; });
+    linked.sort(function(a,b){
+      var ma=Math.max.apply(null,a.map(function(i){return getNote(i).createdAt;}));
+      var mb=Math.max.apply(null,b.map(function(i){return getNote(i).createdAt;}));
+      return mb-ma;
+    });
+    var singles=groups.filter(function(g){ return g.length===1; }).map(function(g){ return g[0]; });
+    singles.sort(function(a,b){ return getNote(b).createdAt-getNote(a).createdAt; });
+    return { linked:linked, singles:singles };
+  }
+  function textTree(node){
+    var n=getNote(node.id);
+    return {
+      text:n.text,
+      createdAt:new Date(n.createdAt).toISOString(),
+      date:fmt(n.createdAt),
+      children:node.children.map(textTree)
+    };
+  }
+  function flattenTree(node, depth, out){
+    out.push({ id:node.id, depth:depth });
+    node.children.forEach(function(c){ flattenTree(c, depth+1, out); });
+  }
+  function stamp(){
+    var d=new Date(), p=function(n){return(n<10?'0':'')+n;};
+    return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes());
+  }
+  function download(filename, text, mime){
+    try{
+      var blob=new Blob([text], { type:mime });
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=url; a.download=filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+    }catch(e){
+      alert('書き出しに失敗しました。ファイルを保存してから直接ブラウザで開くと利用できます。');
+    }
+  }
+  function exportJSON(){
+    var L=orderedLists();
+    var data={
+      app:'紡 つむぐメモ',
+      exportedAt:new Date().toISOString(),
+      groups:L.linked.map(function(g,i){
+        return { name:'つながり'+(i+1), count:g.length, outline:textTree(buildTree(g)) };
+      }),
+      singles:L.singles.map(function(id){
+        var n=getNote(id);
+        return { text:n.text, createdAt:new Date(n.createdAt).toISOString(), date:fmt(n.createdAt) };
+      })
+    };
+    download('tsumugu-memo_'+stamp()+'.json', JSON.stringify(data, null, 2), 'application/json');
+  }
+  function csvCell(v){
+    v=(v==null?'':String(v));
+    if(/[",\r\n]/.test(v)){ v='"'+v.replace(/"/g,'""')+'"'; }
+    return v;
+  }
+  function exportCSV(){
+    var L=orderedLists();
+    var rows=[['種別','グループ','階層','インデント','メモ','日時']];
+    L.linked.forEach(function(g,i){
+      var flat=[]; flattenTree(buildTree(g), 0, flat);
+      flat.forEach(function(f){
+        var n=getNote(f.id);
+        var indent=new Array(f.depth+1).join('　')+'・'; // 全角スペースで字下げ
+        rows.push(['つながり', String(i+1), String(f.depth), indent+n.text, n.text, fmt(n.createdAt)]);
+      });
+    });
+    L.singles.forEach(function(id){
+      var n=getNote(id);
+      rows.push(['単独','', '0', '・'+n.text, n.text, fmt(n.createdAt)]);
+    });
+    var csv='\uFEFF'+rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n');
+    download('tsumugu-memo_'+stamp()+'.csv', csv, 'text/csv');
+  }
+
+  /* ---------- リストのドラッグで階層移動 ---------- */
+  function initListDnD(){
+    var wrap = document.getElementById('listInner');
+    var dragId=null, ghost=null, sx=0, sy=0, active=false, target=null, pid=null;
+
+    function targetUnder(ev){
+      if(ghost) ghost.style.display='none';
+      var el = document.elementFromPoint(ev.clientX, ev.clientY);
+      if(ghost) ghost.style.display='';
+      return el;
+    }
+    function clearHi(){
+      var ds = wrap.querySelectorAll('.row.drop-into');
+      for(var i=0;i<ds.length;i++) ds[i].classList.remove('drop-into');
+      var rz = document.getElementById('rootzone'); if(rz) rz.classList.remove('hot');
+      target = null;
+    }
+    function highlight(ev){
+      clearHi();
+      var el = targetUnder(ev); if(!el || !el.closest) return;
+      var rz = el.closest('.rootzone');
+      if(rz){ rz.classList.add('hot'); target={ type:'root' }; return; }
+      var li = el.closest('li[data-id]');
+      if(li && li.dataset.id!==dragId){
+        var desc = descendantsOf(dragId);
+        if(!desc[li.dataset.id]){ li.querySelector('.row').classList.add('drop-into'); target={ type:'node', id:li.dataset.id }; }
+      }
+    }
+    function onMove(ev){
+      if(!active){
+        if(Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy) < 6) return;
+        active=true;
+        var n=getNote(dragId);
+        ghost=document.createElement('div'); ghost.className='dnd-ghost';
+        ghost.textContent = n?n.text:''; document.body.appendChild(ghost);
+        document.body.classList.add('dnd-on');
+      }
+      ghost.style.left=ev.clientX+'px'; ghost.style.top=ev.clientY+'px';
+      highlight(ev);
+    }
+    function onUp(ev){
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+      if(active){
+        highlight(ev);
+        var t=target;
+        if(t){ if(t.type==='root') reparent(dragId, null); else reparent(dragId, t.id); }
+      }
+      if(ghost){ ghost.remove(); ghost=null; }
+      document.body.classList.remove('dnd-on');
+      clearHi(); active=false; dragId=null;
+    }
+    wrap.addEventListener('pointerdown', function(ev){
+      var grip = ev.target.closest ? ev.target.closest('.grip') : null;
+      if(!grip) return;
+      var li = grip.closest('li[data-id]'); if(!li) return;
+      ev.preventDefault();
+      dragId = li.dataset.id; sx=ev.clientX; sy=ev.clientY; active=false; pid=ev.pointerId;
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+    });
+  }
+
+  /* ---------- スキン（デザイン切り替え） ---------- */
+  var SKIN_KEY = 'tsumugu-skin-v1';
+  var skinSelect = document.getElementById('skinSelect');
+  var THEME_COLOR = { leaf:'#003A17', 'default':'#1A1C24', cloud:'#D2E8FB' };
+  function applySkin(skin){
+    if(['leaf','default','cloud'].indexOf(skin)<0) skin='default';
+    var b = document.body;
+    b.classList.remove('skin-leaf','skin-default','skin-cloud');
+    b.classList.add('skin-'+skin);
+    var m = document.querySelector('meta[name="theme-color"]');
+    if(m) m.setAttribute('content', THEME_COLOR[skin] || '#003A17');
+    try{ localStorage.setItem(SKIN_KEY, skin); }catch(e){}
+    // 形やパディングが変わるので、線を引き直す（移行アニメ後も再描画）
+    requestAnimationFrame(function(){ drawThreads(); });
+    setTimeout(drawThreads, 400);
+  }
+  (function initSkin(){
+    var saved = 'leaf';
+    try{ saved = localStorage.getItem(SKIN_KEY) || 'leaf'; }catch(e){}
+    if(['leaf','default','cloud'].indexOf(saved)<0) saved='leaf';
+    if(skinSelect) skinSelect.value = saved;
+    applySkin(saved);
+    if(skinSelect) skinSelect.addEventListener('change', function(){ applySkin(skinSelect.value); });
+  })();
+
+  /* ---------- 起動 ---------- */
+  load();
+  applyView();
+  renderCards();
+  drawThreads();
+  refreshBadge();
+  updateEmpty();
+  initListDnD();
+
+  // 入力欄以外をタップしたらキーボードを閉じやすく（任意）
+  canvas.addEventListener('pointerdown', function(){ if(document.activeElement===addInput) addInput.blur(); }, true);
+
+})();
+</script>
+</body>
+</html>
