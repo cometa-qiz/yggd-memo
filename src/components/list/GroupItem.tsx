@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { buildTree, type NoteGroup, type TreeNode } from '@/utils/graphUtils';
 
 type Props = {
@@ -13,10 +13,13 @@ type Props = {
   onRemoveLink: (linkId: string) => Promise<void>;
 };
 
-type DragState = {
+// Ref で同期的に管理するドラッグ状態
+type DragRef = {
   noteId: string;
-  /** ツリー上の親ノードID。ルートの場合は null */
   parentId: string | null;
+  startX: number;
+  startY: number;
+  active: boolean; // 閾値を超えて視覚ドラッグが始まったか
 };
 
 type NodeViewProps = {
@@ -28,15 +31,16 @@ type NodeViewProps = {
   onSetRoot: (noteId: string) => void;
   draggingId: string | null;
   dragOverId: string | null;
-  onDragStart: (noteId: string, parentId: string | null) => void;
-  onDragOver: (noteId: string) => void;
-  onDrop: (noteId: string) => void;
-  onDragEnd: () => void;
+  onNodePointerDown: (e: React.PointerEvent, noteId: string, parentId: string | null) => void;
+  onNodePointerMove: (e: React.PointerEvent) => void;
+  onNodePointerUp: (e: React.PointerEvent) => void;
+  onNodePointerCancel: () => void;
 };
 
 function TreeNodeView({
   node, parentId, depth, isLast, continuations, onSetRoot,
-  draggingId, dragOverId, onDragStart, onDragOver, onDrop, onDragEnd,
+  draggingId, dragOverId,
+  onNodePointerDown, onNodePointerMove, onNodePointerUp, onNodePointerCancel,
 }: NodeViewProps) {
   const isRoot = depth === 0;
   const isDragging = draggingId === node.note.id;
@@ -53,21 +57,31 @@ function TreeNodeView({
   return (
     <li className="list-none">
       <div
-        draggable={!isRoot}
-        onDragStart={
+        data-note-id={node.note.id}
+        onPointerDown={
           !isRoot
-            ? (e) => { e.stopPropagation(); onDragStart(node.note.id, parentId); }
+            ? (e) => {
+                e.stopPropagation();
+                // 即座にキャプチャ → 以降のmove/upを確実にこの要素で受け取る
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                onNodePointerDown(e, node.note.id, parentId);
+              }
             : undefined
         }
-        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); onDragOver(node.note.id); }}
-        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDrop(node.note.id); }}
-        onDragEnd={onDragEnd}
+        onPointerMove={onNodePointerMove}
+        onPointerUp={onNodePointerUp}
+        onPointerCancel={onNodePointerCancel}
         className="flex items-start gap-2 py-0.5 rounded transition-colors"
         style={{
           background: isDragOver ? 'rgba(var(--accent-rgb), 0.15)' : 'transparent',
           opacity: isDragging ? 0.4 : 1,
-          cursor: isDragging ? 'grabbing' : (!isRoot ? 'grab' : 'default'),
+          cursor: draggingId != null
+            ? (isDragging ? 'grabbing' : 'default')
+            : (!isRoot ? 'grab' : 'default'),
           outline: isDragOver ? '1px solid rgba(var(--accent-rgb), 0.4)' : 'none',
+          // タッチデバイスでブラウザのスクロール処理をキャンセルし、ドラッグを優先させる
+          touchAction: !isRoot ? 'none' : 'auto',
+          userSelect: 'none',
         }}
       >
         {/* ツリー線・根マーク */}
@@ -98,9 +112,10 @@ function TreeNodeView({
           )}
         </p>
 
-        {/* 根にするボタン */}
+        {/* 根にするボタン: pointerdown を止めてドラッグ開始を防ぎ、click を正常に発火させる */}
         {!isRoot && (
           <button
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => onSetRoot(node.note.id)}
             title="この操作は一時的です。ページを再読み込みするとデフォルトに戻ります"
             className="mt-0.5 shrink-0 text-xs transition-opacity hover:opacity-70"
@@ -124,10 +139,10 @@ function TreeNodeView({
               onSetRoot={onSetRoot}
               draggingId={draggingId}
               dragOverId={dragOverId}
-              onDragStart={onDragStart}
-              onDragOver={onDragOver}
-              onDrop={onDrop}
-              onDragEnd={onDragEnd}
+              onNodePointerDown={onNodePointerDown}
+              onNodePointerMove={onNodePointerMove}
+              onNodePointerUp={onNodePointerUp}
+              onNodePointerCancel={onNodePointerCancel}
             />
           ))}
         </ul>
@@ -136,37 +151,85 @@ function TreeNodeView({
   );
 }
 
+const DRAG_THRESHOLD_PX = 8;
+
 /**
  * 1グループ分のメモを木構造で表示し、ドラッグ操作で親子関係を変更できる。
- * - 非ルートノードをドラッグして別ノードにドロップすると、古いリンクを削除し新しいリンクを追加する
+ * - Pointer Events でマウス・タッチ両対応（HTML5 DnD API は使用しない）
+ * - 非ルートノードを DRAG_THRESHOLD_PX 以上動かすとドラッグ開始
  * - ルートノードはドラッグ不可（「これを根にする」で根を変更する）
  */
 export function GroupItem({
   group, rootId, isRootOverridden, onSetRoot, onResetRoot, onAddLink, onRemoveLink,
 }: Props) {
-  const [dragState, setDragState] = useState<DragState | null>(null);
+  // イベントハンドラ内で同期的に参照するためにrefを使う
+  const dragRef = useRef<DragRef | null>(null);
+  // 描画用のstate（refとは別に管理）
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const tree = buildTree(group.notes, group.links, rootId);
   if (!tree) return null;
 
-  function handleDragStart(noteId: string, parentId: string | null) {
-    setDragState({ noteId, parentId });
+  function handlePointerDown(e: React.PointerEvent, noteId: string, parentId: string | null) {
+    dragRef.current = {
+      noteId,
+      parentId,
+      startX: e.clientX,
+      startY: e.clientY,
+      active: false,
+    };
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    const dr = dragRef.current;
+    if (!dr) return;
+
+    if (!dr.active) {
+      const dx = e.clientX - dr.startX;
+      const dy = e.clientY - dr.startY;
+      if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return;
+      dr.active = true;
+      setDraggingId(dr.noteId);
+    }
+
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const target = (el as Element | null)?.closest('[data-note-id]') as HTMLElement | null;
+    setDragOverId(target?.dataset?.noteId ?? null);
+  }
+
+  function clearDrag() {
+    dragRef.current = null;
+    setDraggingId(null);
     setDragOverId(null);
   }
 
-  function handleDragEnd() {
-    setDragState(null);
-    setDragOverId(null);
+  function handlePointerUp(e: React.PointerEvent) {
+    const dr = dragRef.current;
+    if (!dr) return;
+
+    if (!dr.active) {
+      // 閾値未満のタップ → ドラッグとして扱わない
+      dragRef.current = null;
+      return;
+    }
+
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const target = (el as Element | null)?.closest('[data-note-id]') as HTMLElement | null;
+    const targetId = target?.dataset?.noteId ?? null;
+
+    // clearDrag を先に呼んでから非同期処理へ
+    const { noteId: draggedId, parentId: currentParentId } = dr;
+    clearDrag();
+
+    if (targetId) void executeDrop(draggedId, currentParentId, targetId);
   }
 
-  async function handleDrop(targetId: string) {
-    if (!dragState) return;
-    const { noteId: draggedId, parentId: currentParentId } = dragState;
-
-    setDragState(null);
-    setDragOverId(null);
-
+  async function executeDrop(
+    draggedId: string,
+    currentParentId: string | null,
+    targetId: string,
+  ) {
     if (draggedId === targetId) return;
     if (currentParentId === targetId) return;
 
@@ -226,12 +289,12 @@ export function GroupItem({
           isLast
           continuations={[]}
           onSetRoot={onSetRoot}
-          draggingId={dragState?.noteId ?? null}
+          draggingId={draggingId}
           dragOverId={dragOverId}
-          onDragStart={handleDragStart}
-          onDragOver={setDragOverId}
-          onDrop={handleDrop}
-          onDragEnd={handleDragEnd}
+          onNodePointerDown={handlePointerDown}
+          onNodePointerMove={handlePointerMove}
+          onNodePointerUp={handlePointerUp}
+          onNodePointerCancel={clearDrag}
         />
       </ul>
     </section>

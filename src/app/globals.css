@@ -155,6 +155,20 @@ body {
   --chip-fg:      #EEF0F8;
 }
 
+/* ===== トースト通知アニメーション ======================================= */
+
+@keyframes toast-slide-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes toast-slide-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(8px); }
+}
+
+/* ======================================================================== */
+
 .skin-cloud {
   /* 雲 — ライト青 */
   --ink:         #33475A;

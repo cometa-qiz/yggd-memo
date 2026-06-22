@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useBoardsContext } from '@/contexts/BoardsContext';
 import { useNotes } from '@/hooks/useNotes';
 import { useLinks } from '@/hooks/useLinks';
+import { useToast } from '@/contexts/ToastContext';
 import { GroupList } from '@/components/list/GroupList';
 
 /**
@@ -15,8 +16,29 @@ export default function ListPage() {
   const boardId = currentBoard?.id ?? null;
   const { notes } = useNotes(boardId);
   const { links, addLink, removeLink } = useLinks(boardId);
+  const showToast = useToast();
 
   const skin = currentBoard?.skin ?? 'leaf';
+
+  async function handleAddLink(a: string, b: string): Promise<string> {
+    try {
+      return await addLink(a, b);
+    } catch (e) {
+      console.error('[ListPage] addLink failed:', e);
+      showToast('つながりの変更に失敗しました。再度お試しください。');
+      throw e;
+    }
+  }
+
+  async function handleRemoveLink(linkId: string): Promise<void> {
+    try {
+      await removeLink(linkId);
+    } catch (e) {
+      console.error('[ListPage] removeLink failed:', e);
+      showToast('つながりの変更に失敗しました。再度お試しください。');
+      throw e;
+    }
+  }
 
   if (boardLoading) {
     return (
@@ -51,8 +73,8 @@ export default function ListPage() {
       <GroupList
         notes={notes}
         links={links}
-        onAddLink={addLink}
-        onRemoveLink={removeLink}
+        onAddLink={handleAddLink}
+        onRemoveLink={handleRemoveLink}
       />
     </div>
   );

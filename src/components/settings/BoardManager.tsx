@@ -13,6 +13,9 @@ export function BoardManager() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
+  const [confirmDeleteBoard, setConfirmDeleteBoard] = useState<Board | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const newInputRef = useRef<HTMLInputElement>(null);
 
   async function handleAdd() {
@@ -44,7 +47,19 @@ export function BoardManager() {
     setRenamingId(null);
   }
 
+  async function handleConfirmDelete() {
+    if (!confirmDeleteBoard || deleting) return;
+    setDeleting(true);
+    try {
+      await removeBoard(confirmDeleteBoard.id);
+    } finally {
+      setDeleting(false);
+      setConfirmDeleteBoard(null);
+    }
+  }
+
   return (
+    <>
     <section className="space-y-4">
       <h2
         className="text-sm font-semibold uppercase tracking-wide"
@@ -127,7 +142,7 @@ export function BoardManager() {
                   名前変更
                 </button>
                 <button
-                  onClick={() => removeBoard(board.id)}
+                  onClick={() => setConfirmDeleteBoard(board)}
                   disabled={boards.length <= 1}
                   className="shrink-0 text-xs px-2 py-1 rounded transition-opacity hover:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{ color: 'var(--dusk)' }}
@@ -170,5 +185,42 @@ export function BoardManager() {
         </button>
       </div>
     </section>
+
+    {/* ボード削除 確認ポップアップ */}
+    {confirmDeleteBoard && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div
+          className="rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4 space-y-4"
+          style={{ background: 'var(--paper)', border: '1px solid var(--line)' }}
+        >
+          <h3 className="text-base font-semibold" style={{ color: 'var(--ink)' }}>
+            このボードを削除しますか？
+          </h3>
+          <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+            「{confirmDeleteBoard.name}」を削除します。
+            この操作は取り消せません。
+          </p>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => setConfirmDeleteBoard(null)}
+              disabled={deleting}
+              className="text-sm px-4 py-2 rounded-xl transition-opacity hover:opacity-80 disabled:opacity-40"
+              style={{ border: '1px solid var(--line)', color: 'var(--ink)', background: 'transparent' }}
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+              className="text-sm px-4 py-2 rounded-xl transition-opacity hover:opacity-80 disabled:opacity-40"
+              style={{ background: 'var(--dusk)', color: '#fff' }}
+            >
+              {deleting ? '削除中…' : '削除する'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

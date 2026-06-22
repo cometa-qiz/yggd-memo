@@ -6,6 +6,7 @@ import { NoteCard } from './NoteCard';
 import { LinkLine } from './LinkLine';
 import { CanvasControls } from './CanvasControls';
 import type { CanvasView } from '@/hooks/useCanvasView';
+import { useToast } from '@/contexts/ToastContext';
 
 const CARD_CX = 100;
 const CARD_CY = 40;
@@ -111,6 +112,8 @@ type Props = {
 };
 
 export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, onMove, onAddLink, onRemoveLink }: Props) {
+  const showToast = useToast();
+
   // pan・zoom は useCanvasView フックから受け取る（page.tsx と共有）
   const { zoom, pan, setZoom, setPan, zoomRef, panRef, canvasRef } = view;
 
@@ -442,10 +445,16 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
 
   function commitCuts(state: typeof cutStateRef.current) {
     if (!state || state.cutIds.size === 0) return;
-    console.log('[CUT-DBG] Committing %d cut(s)', state.cutIds.size);
-    for (const linkId of state.cutIds) {
-      onRemoveLink(linkId).catch(console.error);
-    }
+    const linkIds = Array.from(state.cutIds);
+    void Promise.all(linkIds.map((id) => onRemoveLink(id)))
+      .then(() => {
+        const n = linkIds.length;
+        showToast(n > 1 ? `${n}本のつながりを切りました` : 'つながりを切りました', 'success');
+      })
+      .catch((e) => {
+        console.error('[Canvas] commitCuts failed:', e);
+        showToast('つながりの切断に失敗しました。再度お試しください。');
+      });
   }
 
   async function handleCanvasPointerUp(e: React.PointerEvent<HTMLDivElement>) {
@@ -467,7 +476,14 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
     if (!connecting) return;
     const { fromId, targetId } = connecting;
     setConnecting(null);
-    if (targetId) await onAddLink(fromId, targetId);
+    if (targetId) {
+      try {
+        await onAddLink(fromId, targetId);
+      } catch (e) {
+        console.error('[Canvas] onAddLink failed:', e);
+        showToast('つながりの作成に失敗しました。再度お試しください。');
+      }
+    }
   }
 
   function handleCanvasPointerLeave(e: React.PointerEvent<HTMLDivElement>) {
@@ -518,8 +534,14 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   // ── 切る操作（チップ） ────────────────────────────────────────────
 
   async function handleCutLink(linkId: string) {
-    await onRemoveLink(linkId);
-    setSelectedLinkId(null);
+    try {
+      await onRemoveLink(linkId);
+      setSelectedLinkId(null);
+      showToast('つながりを切りました', 'success');
+    } catch (e) {
+      console.error('[Canvas] handleCutLink failed:', e);
+      showToast('つながりの切断に失敗しました。再度お試しください。');
+    }
   }
 
   function handleCanvasClick() {

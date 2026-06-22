@@ -4,6 +4,7 @@ import { useBoardsContext } from '@/contexts/BoardsContext';
 import { useNotes } from '@/hooks/useNotes';
 import { useLinks } from '@/hooks/useLinks';
 import { useCanvasView } from '@/hooks/useCanvasView';
+import { useToast } from '@/contexts/ToastContext';
 import { NoteInput } from '@/components/layout/NoteInput';
 import { Canvas } from '@/components/canvas/Canvas';
 import { findEmptyPosition } from '@/utils/positionUtils';
@@ -17,6 +18,7 @@ export default function Home() {
   const { notes, addNote, editNote, removeNote, moveNote } = useNotes(currentBoard?.id ?? null);
   const { links, addLink, removeLink } = useLinks(currentBoard?.id ?? null);
   const view = useCanvasView();
+  const showToast = useToast();
 
   async function handleAddNote(text: string): Promise<string> {
     // 現在の表示領域の中心をワールド座標で取得し、カードが画面中央付近に出るよう配置する
@@ -27,9 +29,33 @@ export default function Home() {
     return addNote(text, x, y);
   }
 
+  async function handleEditNote(noteId: string, text: string): Promise<void> {
+    try {
+      await editNote(noteId, text);
+    } catch (e) {
+      console.error('[Home] editNote failed:', e);
+      showToast('メモの編集に失敗しました。再度お試しください。');
+    }
+  }
+
+  async function handleRemoveNote(noteId: string): Promise<void> {
+    try {
+      await removeNote(noteId);
+      showToast('メモを削除しました', 'success');
+    } catch (e) {
+      console.error('[Home] removeNote failed:', e);
+      showToast('メモの削除に失敗しました。再度お試しください。');
+    }
+  }
+
   async function handleMoveNote(noteId: string, x: number, y: number): Promise<void> {
     const { x: newX, y: newY } = findEmptyPosition(x, y, notes, noteId);
-    await moveNote(noteId, newX, newY);
+    try {
+      await moveNote(noteId, newX, newY);
+    } catch (e) {
+      // 移動失敗は Firestore が位置を元に戻すため、トーストは出さずコンソールのみ
+      console.error('[Home] moveNote failed:', e);
+    }
   }
 
   return (
@@ -40,8 +66,8 @@ export default function Home() {
         links={links}
         skin={currentBoard?.skin ?? 'leaf'}
         view={view}
-        onEdit={editNote}
-        onRemove={removeNote}
+        onEdit={handleEditNote}
+        onRemove={handleRemoveNote}
         onMove={handleMoveNote}
         onAddLink={addLink}
         onRemoveLink={removeLink}
