@@ -291,6 +291,24 @@ export async function deactivateLink(
 }
 
 /**
+ * 全ボール書き出し用に、指定ボードのアクティブな notes/links を1回だけ取得する（購読しない）。
+ * R2-6: 設定画面の「全ボード一括書き出し」から使用する。
+ */
+export async function fetchBoardExportData(
+  userId: string,
+  boardId: string
+): Promise<{ notes: Note[]; links: import('@/types').Link[] }> {
+  const [notesSnap, linksSnap] = await Promise.all([
+    getDocs(query(notesCol(userId, boardId), where('isActive', '==', true))),
+    getDocs(query(linksCol(userId, boardId), where('isActive', '==', true))),
+  ]);
+  return {
+    notes: notesSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Note),
+    links: linksSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as import('@/types').Link),
+  };
+}
+
+/**
  * ボード内のアクティブなメモとリンクをすべて論理削除する（一括削除）。
  * constraints.md ルール #8: isActive: false での論理削除のみ（物理削除禁止）
  */

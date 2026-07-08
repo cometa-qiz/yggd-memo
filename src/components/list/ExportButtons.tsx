@@ -1,6 +1,6 @@
 'use client';
 
-import { exportAsCSV, exportAsJSON } from '@/utils/exportUtils';
+import { exportAsCSV, exportAsJSON, triggerDownload } from '@/utils/exportUtils';
 import type { NoteGroup } from '@/utils/graphUtils';
 
 type Props = {
@@ -11,19 +11,6 @@ type Props = {
    */
   rootIds: string[];
 };
-
-/** Blob URL を使ってファイルをブラウザでダウンロードする */
-function triggerDownload(content: string, filename: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
 /**
  * リスト画面の下端に表示する書き出しボタン群。

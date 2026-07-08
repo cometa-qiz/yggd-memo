@@ -281,6 +281,16 @@
 
 ---
 
+## Phase R2 ― 設計レビュー対応（design-review_2026-07.md・進行中）
+
+**ゴール: design-review_2026-07.md の Phase R2（重要度: 中、6件）に対応する**
+
+- [x] R2-6: バックアップ経路の確保（アプリ内の全ボード一括書き出しのみ実装。インフラ側の自動バックアップ／Blaze移行は見送り）。`src/lib/firestore.ts`に`fetchBoardExportData`（1ボード分のnotes/linksを1回だけ取得）を追加。`src/utils/exportUtils.ts`に`exportAllBoardsAsCSV`/`exportAllBoardsAsJSON`（ボード見出し付きでまとめる）と、`ExportButtons.tsx`と共通化した`triggerDownload`を追加。設定画面に新規`AllBoardsExport.tsx`（「全ボードの書き出し」セクション）を追加し`settings/page.tsx`に組み込み（2026-07-08完了）
+
+> **運用ルール（重要）**: `scripts/cleanup-soft-deleted.mjs`は論理削除から30日経過したデータを**物理削除**する。実行前には必ず設定画面の「全ボードの書き出し」でCSV/JSONバックアップを取得しておくこと（復元不可能なため）。スクリプト本体の冒頭コメントにも同旨を明記済み。
+
+---
+
 ## チェックリスト外の追加対応（Phase 9 並行作業）
 
 ### デザイン整備

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useBoardsContext } from '@/contexts/BoardsContext';
 import { SkinSelector } from '@/components/settings/SkinSelector';
 import { BoardManager } from '@/components/settings/BoardManager';
+import { AllBoardsExport } from '@/components/settings/AllBoardsExport';
 import { DangerZone } from '@/components/settings/DangerZone';
 
 export default function SettingsPage() {
@@ -48,6 +49,7 @@ export default function SettingsPage() {
 
         {/* ─── セクション2: ボード一覧・管理 ───────────────────────── */}
         <BoardManager />
+        <AllBoardsExport />
 
         {/* ─── セクション3: 危険な操作・アカウント ─────────────────── */}
         <DangerZone />
