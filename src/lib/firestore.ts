@@ -10,6 +10,7 @@ import {
   where,
   runTransaction,
   writeBatch,
+  type DocumentReference,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -310,9 +311,43 @@ export async function fetchBoardExportData(
   };
 }
 
+// writeBatchの上限（500件/バッチ）に合わせたチャンクサイズ
+const BULK_DEACTIVATE_CHUNK_SIZE = 500;
+// チャンクごとのcommit失敗時のリトライ回数（isActive:falseへの更新は冪等なため再試行しても安全）
+const BULK_DEACTIVATE_MAX_RETRIES = 3;
+const BULK_DEACTIVATE_RETRY_DELAY_MS = 500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** 1チャンク分（最大500件）をwriteBatchでcommitする。失敗時は指定回数までリトライする */
+async function commitDeactivateChunk(refs: DocumentReference[]): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= BULK_DEACTIVATE_MAX_RETRIES; attempt++) {
+    try {
+      const batch = writeBatch(db);
+      for (const ref of refs) {
+        batch.update(ref, { isActive: false, updatedAt: serverTimestamp() });
+      }
+      await batch.commit();
+      return;
+    } catch (err) {
+      lastError = err;
+      if (attempt < BULK_DEACTIVATE_MAX_RETRIES) {
+        await sleep(BULK_DEACTIVATE_RETRY_DELAY_MS * (attempt + 1));
+      }
+    }
+  }
+  throw lastError;
+}
+
 /**
  * ボード内のアクティブなメモとリンクをすべて論理削除する（一括削除）。
  * constraints.md ルール #8: isActive: false での論理削除のみ（物理削除禁止）
+ *
+ * notes/linksを合わせて500件ごとにチャンク分割し、writeBatchで順次commitする。
+ * チャンクは並列実行せず、失敗したチャンクだけ個別にリトライできるようにする。
  */
 export async function deactivateAllNotesAndLinks(
   userId: string,
@@ -322,12 +357,11 @@ export async function deactivateAllNotesAndLinks(
     getDocs(query(notesCol(userId, boardId), where('isActive', '==', true))),
     getDocs(query(linksCol(userId, boardId), where('isActive', '==', true))),
   ]);
-  await Promise.all([
-    ...notesSnap.docs.map((d) =>
-      updateDoc(d.ref, { isActive: false, updatedAt: serverTimestamp() })
-    ),
-    ...linksSnap.docs.map((d) =>
-      updateDoc(d.ref, { isActive: false, updatedAt: serverTimestamp() })
-    ),
-  ]);
+
+  const allRefs = [...notesSnap.docs.map((d) => d.ref), ...linksSnap.docs.map((d) => d.ref)];
+
+  for (let i = 0; i < allRefs.length; i += BULK_DEACTIVATE_CHUNK_SIZE) {
+    const chunk = allRefs.slice(i, i + BULK_DEACTIVATE_CHUNK_SIZE);
+    await commitDeactivateChunk(chunk);
+  }
 }
