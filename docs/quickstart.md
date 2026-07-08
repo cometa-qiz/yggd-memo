@@ -126,6 +126,38 @@ const firebaseConfig = {
 
 ---
 
+### 2-6. App Check（不正利用対策）を設定する
+
+App Checkは、正規のアプリ以外からのFirestoreへのアクセスをブロックする仕組みです。
+「reCAPTCHA v3」というGoogleの無料サービスと連携させます（Blazeプラン=従量課金への移行は不要）。
+
+**a. reCAPTCHA v3のサイトキーを取得する**
+
+1. [https://www.google.com/recaptcha/admin/create](https://www.google.com/recaptcha/admin/create) を開く
+2. 「ラベル」に `yggd-memo` などわかりやすい名前を入力
+3. 「reCAPTCHA タイプ」で **v3** を選択
+4. 「ドメイン」に以下を1行ずつ追加
+   - `localhost`（ローカル開発用）
+   - STEP 2-4で確認したFirebase Hostingのドメイン（例: `yggd-memo-xxxxx.web.app`。独自ドメインがあればそれも追加）
+5. 利用規約に同意して「送信」
+6. 表示される「**サイトキー**」をコピーしておく（あとで`.env.local`に使用）
+7. 「**シークレットキー**」もこの後Firebaseコンソール側の登録で使うので、ページを閉じずコピーしておく
+
+**b. Firebaseコンソール側でApp Checkを登録する**
+
+1. [Firebaseコンソール](https://console.firebase.google.com)でプロジェクトを開く
+2. 左メニューの「構築」または「Run」セクション付近にある「**App Check**」をクリック
+3. 「アプリ」タブに、STEP 2-5で登録したウェブアプリ（`yggd-memo-web`）が表示される
+4. その行の「**登録**」ボタンをクリック
+5. プロバイダとして「**reCAPTCHA v3**」を選択
+6. 手順aで取得した「サイトキー」と「シークレットキー」を入力して保存
+7. 登録直後は「**未適用（モニタリングのみ）**」状態のままにしておくこと。
+   しばらく実際に使ってみて問題がないことを確認してから、
+   「App Check」→「API」タブの「Cloud Firestore」で「**適用を開始**」に切り替える
+   （先に適用を開始すると、デバッグトークン登録前は自分自身もブロックされる可能性があるため）
+
+---
+
 ## STEP 3 ｜ プロジェクトをパソコンに用意する
 
 ---
@@ -194,9 +226,16 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=ここにprojectIdの値
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=ここにstorageBucketの値
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=ここにmessagingSenderIdの値
 NEXT_PUBLIC_FIREBASE_APP_ID=ここにappIdの値
+NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY=ここにSTEP 2-6で取得したサイトキーの値
 ```
 
 > ⚠️ `.env.local` はGitにコミットしないこと。`.gitignore` に記載済みなので自動で除外されます。
+
+> 💡 ローカル開発中（`pnpm dev`）にブラウザのコンソールに
+> `AppCheck debug token: xxxxxxxx...` のようなメッセージが表示されたら、
+> そのトークンをコピーしてFirebaseコンソールの「App Check」→ 対象アプリの「⋮」メニュー →
+> 「デバッグトークンを管理」から登録しておくこと。登録しないと、
+> App Checkを「適用」に切り替えた後にローカル開発環境からのアクセスがブロックされる。
 
 > ⚠️ 貼り付けたあと、`=` の前後に余計な空白が無いか、値が途中で改行されて
 > 切れていないかを必ず確認すること（コピー時のミスでFirebase接続エラーの

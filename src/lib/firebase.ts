@@ -1,4 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
 import {
   getFirestore,
@@ -17,6 +18,37 @@ const firebaseConfig = {
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+
+// App Check（reCAPTCHA v3）をブラウザ環境のみで初期化する。
+// - Next.js 静的ビルド時（Node.js）は window/reCAPTCHAスクリプトが存在しないため呼ばない
+// - サイトキー未設定（Firebaseコンソール側の登録前など）の場合は初期化をスキップする
+//   （docs/quickstart.md STEP 2-6 記載の手順でコンソール登録後、環境変数を設定すること）
+// - 開発環境ではデバッグトークンを有効化し、localhost からのアクセスがブロックされないようにする。
+//   コンソールに出力されるトークンをFirebaseコンソールの
+//   「App Check > アプリ > デバッグトークンを管理」に登録する必要がある
+function initAppCheck() {
+  if (typeof window === "undefined") return;
+
+  const siteKey = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY;
+  if (!siteKey) {
+    console.warn(
+      "[firebase] NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY が未設定のため App Check を初期化しません"
+    );
+    return;
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    (self as typeof self & { FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN =
+      true;
+  }
+
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider(siteKey),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
+
+initAppCheck();
 
 export const auth = getAuth(app);
 
