@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { subscribeLinks, createLink, deactivateLink } from '@/lib/firestore';
+import { findActiveLink } from '@/utils/graphUtils';
 import type { Link } from '@/types';
 
 type UseLinksReturn = {
@@ -29,9 +30,12 @@ export function useLinks(boardId: string | null): UseLinksReturn {
   const addLink = useCallback(
     async (a: string, b: string): Promise<string> => {
       if (!user || !boardId) throw new Error('Not authenticated or no board');
+      // a/bどちらの向きでも既存のisActiveなリンクがあれば新規作成せず既存IDを返す
+      const existing = findActiveLink(links, a, b);
+      if (existing) return existing.id;
       return createLink(user.uid, boardId, a, b);
     },
-    [user, boardId]
+    [user, boardId, links]
   );
 
   const removeLink = useCallback(

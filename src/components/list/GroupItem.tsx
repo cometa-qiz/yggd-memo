@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { buildTree, type NoteGroup, type TreeNode } from '@/utils/graphUtils';
+import { buildTree, findActiveLink, type NoteGroup, type TreeNode } from '@/utils/graphUtils';
 
 type Props = {
   group: NoteGroup;
@@ -234,22 +234,13 @@ export function GroupItem({
     if (currentParentId === targetId) return;
 
     if (currentParentId !== null) {
-      const oldLink = group.links.find(
-        (l) =>
-          l.isActive &&
-          ((l.a === draggedId && l.b === currentParentId) ||
-            (l.b === draggedId && l.a === currentParentId)),
-      );
+      const oldLink = findActiveLink(group.links, draggedId, currentParentId);
       if (oldLink) await onRemoveLink(oldLink.id);
     }
 
-    const linkExists = group.links.some(
-      (l) =>
-        l.isActive &&
-        ((l.a === draggedId && l.b === targetId) ||
-          (l.b === draggedId && l.a === targetId)),
-    );
-    if (!linkExists) await onAddLink(draggedId, targetId);
+    if (!findActiveLink(group.links, draggedId, targetId)) {
+      await onAddLink(draggedId, targetId);
+    }
   }
 
   return (
