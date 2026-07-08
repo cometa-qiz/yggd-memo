@@ -69,6 +69,8 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
     startY: 0,
   });
   const preventClickRef = useRef(false);
+  // ESCキャンセル時にblurがsaveを呼ばないようにするフラグ
+  const isCancelingRef = useRef(false);
 
   // コールバックを ref に保持して stale closure を避ける
   const onExpandChangeRef = useRef(onExpandChange);
@@ -134,6 +136,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
 
     timerRef.current = setTimeout(() => {
       if (!dragRef.current.active) {
+        isCancelingRef.current = false;
         setDraft(note.text);
         setEditing(true);
       }
@@ -182,12 +185,30 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
     setExpanded((prev) => !prev);
   }
 
+  function cancelEdit() {
+    isCancelingRef.current = true;
+    setEditing(false);
+  }
+
   async function handleSave() {
+    if (isCancelingRef.current) {
+      isCancelingRef.current = false;
+      return;
+    }
     const trimmed = draft.trim();
     if (trimmed && trimmed !== note.text) {
       await onEdit(note.id, trimmed);
     }
     setEditing(false);
+  }
+
+  function handleDoubleClick(e: React.MouseEvent<HTMLDivElement>) {
+    e.stopPropagation();
+    cancelLongPress();
+    isCancelingRef.current = false;
+    setExpanded(false);
+    setDraft(note.text);
+    setEditing(true);
   }
 
   async function handleRemove(e: React.MouseEvent) {
@@ -218,6 +239,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
       onPointerEnter={() => onConnectEnter(note.id)}
       onPointerLeave={() => onConnectLeave(note.id)}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
     >
       {/*
        * クリップラッパー: clip-path + filter をここに集約する。
@@ -274,10 +296,20 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onBlur={handleSave}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.stopPropagation();
+                  cancelEdit();
+                } else if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void handleSave();
+                }
+              }}
               autoFocus
               rows={3}
               className="w-full resize-none bg-transparent text-sm focus:outline-none"
-              style={{ color: 'var(--ink)' }}
+              style={{ color: 'var(--ink)', cursor: 'text' }}
             />
           ) : (
             <p className="select-none whitespace-pre-wrap break-words text-sm">
@@ -342,8 +374,8 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         </button>
       )}
 
-      {/* 接続ハンドル: クリップラッパー外（クリップされない） */}
-      {!cutMode && (
+      {/* 接続ハンドル: クリップラッパー外（クリップされない）。編集中は非表示 */}
+      {!cutMode && !editing && (
         <div
           className="connect-handle absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
           onPointerDown={(e) => {

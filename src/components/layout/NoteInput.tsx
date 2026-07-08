@@ -29,19 +29,20 @@ export function NoteInput({ addNote, disabled = false }: Props) {
   }
 
   return (
-    <div className="flex gap-2 p-4">
+    <div className="flex gap-2 p-4 overflow-hidden">
       <input
         type="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="思いついたことをメモする..."
-        className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        style={{ fontSize: '16px' }}
+        className="flex-1 min-w-0 rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
       />
       <button
         onClick={handleAdd}
         disabled={disabled || !text.trim()}
-        className="rounded bg-blue-500 px-4 py-2 text-white text-sm font-bold disabled:opacity-40 hover:bg-blue-600 active:bg-blue-700"
+        className="flex-shrink-0 rounded bg-blue-500 px-4 py-2 text-white text-sm font-bold disabled:opacity-40 hover:bg-blue-600 active:bg-blue-700"
       >
         ＋
       </button>
