@@ -8,6 +8,8 @@ import {
   getDocs,
   query,
   where,
+  runTransaction,
+  writeBatch,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -31,11 +33,10 @@ export function subscribeBoards(
   onUpdate: (boards: Board[]) => void
 ): Unsubscribe {
   return onSnapshot(
-    boardsCol(userId),
+    query(boardsCol(userId), where('isActive', '==', true)),
     (snap) => {
       const boards = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }) as Board)
-        .filter((b) => b.isActive)
         .sort((a, b) => a.createdAt?.toMillis?.() - b.createdAt?.toMillis?.());
       onUpdate(boards);
     },
@@ -83,14 +84,53 @@ export async function updateBoardSkin(
   });
 }
 
-/** ボードを論理削除する（isActive: false） */
+/**
+ * ボードを論理削除する（isActive: false）。
+ *
+ * Web SDKのTransaction.get()はDocumentReferenceのみ受け付けクエリを渡せないため、
+ * 「他にアクティブなボードがあるか」の候補となるボードIDを先に通常クエリで洗い出し、
+ * トランザクション内でそれぞれのドキュメントを個別に読み直して最新のisActiveを確認する。
+ * これにより、候補ボードのいずれかが同時に非アクティブ化された場合はトランザクションが
+ * 自動的に再試行され、最後の1枚を消してしまうことはない。
+ *
+ * 配下のアクティブな notes / links も孤児化を防ぐため、同一トランザクションで連鎖して論理削除する。
+ */
 export async function deactivateBoard(
   userId: string,
   boardId: string
-): Promise<void> {
-  await updateDoc(boardRef(userId, boardId), {
-    isActive: false,
-    updatedAt: serverTimestamp(),
+): Promise<'ok' | 'last-board'> {
+  const otherActiveBoardsSnap = await getDocs(
+    query(boardsCol(userId), where('isActive', '==', true))
+  );
+  const candidateRefs = otherActiveBoardsSnap.docs
+    .map((d) => d.ref)
+    .filter((ref) => ref.id !== boardId);
+
+  const [notesSnap, linksSnap] = await Promise.all([
+    getDocs(query(notesCol(userId, boardId), where('isActive', '==', true))),
+    getDocs(query(linksCol(userId, boardId), where('isActive', '==', true))),
+  ]);
+
+  return runTransaction(db, async (tx) => {
+    // tx.get() は転送順序に依存するため並列化せず1件ずつ読む
+    let hasActiveOther = false;
+    for (const ref of candidateRefs) {
+      const snap = await tx.get(ref);
+      if (snap.exists() && snap.data().isActive) {
+        hasActiveOther = true;
+        break;
+      }
+    }
+    if (!hasActiveOther) return 'last-board';
+
+    tx.update(boardRef(userId, boardId), { isActive: false, updatedAt: serverTimestamp() });
+    notesSnap.docs.forEach((d) =>
+      tx.update(d.ref, { isActive: false, updatedAt: serverTimestamp() })
+    );
+    linksSnap.docs.forEach((d) =>
+      tx.update(d.ref, { isActive: false, updatedAt: serverTimestamp() })
+    );
+    return 'ok';
   });
 }
 
@@ -113,11 +153,10 @@ export function subscribeNotes(
   onUpdate: (notes: Note[]) => void
 ): Unsubscribe {
   return onSnapshot(
-    notesCol(userId, boardId),
+    query(notesCol(userId, boardId), where('isActive', '==', true)),
     (snap) => {
       const notes = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }) as Note)
-        .filter((n) => n.isActive)
         .sort((a, b) => a.createdAt?.toMillis?.() - b.createdAt?.toMillis?.());
       onUpdate(notes);
     },
@@ -172,16 +211,26 @@ export async function updateNotePosition(
   });
 }
 
-/** メモを論理削除する（isActive: false） */
+/**
+ * メモを論理削除する（isActive: false）。
+ * 関連するアクティブなリンク（a/bどちらか一致）も孤立を防ぐため、同一writeBatchでアトミックに論理削除する。
+ */
 export async function deactivateNote(
   userId: string,
   boardId: string,
   noteId: string
 ): Promise<void> {
-  await updateDoc(noteRef(userId, boardId, noteId), {
-    isActive: false,
-    updatedAt: serverTimestamp(),
-  });
+  const col = linksCol(userId, boardId);
+  const [snapA, snapB] = await Promise.all([
+    getDocs(query(col, where('a', '==', noteId), where('isActive', '==', true))),
+    getDocs(query(col, where('b', '==', noteId), where('isActive', '==', true))),
+  ]);
+
+  const batch = writeBatch(db);
+  batch.update(noteRef(userId, boardId, noteId), { isActive: false, updatedAt: serverTimestamp() });
+  snapA.docs.forEach((d) => batch.update(d.ref, { isActive: false, updatedAt: serverTimestamp() }));
+  snapB.docs.forEach((d) => batch.update(d.ref, { isActive: false, updatedAt: serverTimestamp() }));
+  await batch.commit();
 }
 
 // ── リンクのパスヘルパー ────────────────────────────────────────
@@ -203,11 +252,9 @@ export function subscribeLinks(
   onUpdate: (links: import('@/types').Link[]) => void
 ): Unsubscribe {
   return onSnapshot(
-    linksCol(userId, boardId),
+    query(linksCol(userId, boardId), where('isActive', '==', true)),
     (snap) => {
-      const links = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }) as import('@/types').Link)
-        .filter((l) => l.isActive);
+      const links = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as import('@/types').Link);
       onUpdate(links);
     },
     (err) => console.error('[subscribeLinks]', err)
@@ -226,6 +273,7 @@ export async function createLink(
     b,
     isActive: true,
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
   return ref.id;
 }
@@ -238,6 +286,7 @@ export async function deactivateLink(
 ): Promise<void> {
   await updateDoc(linkRef(userId, boardId, linkId), {
     isActive: false,
+    updatedAt: serverTimestamp(),
   });
 }
 
@@ -258,31 +307,7 @@ export async function deactivateAllNotesAndLinks(
       updateDoc(d.ref, { isActive: false, updatedAt: serverTimestamp() })
     ),
     ...linksSnap.docs.map((d) =>
-      updateDoc(d.ref, { isActive: false })
+      updateDoc(d.ref, { isActive: false, updatedAt: serverTimestamp() })
     ),
   ]);
-}
-
-/**
- * メモに関連するすべてのアクティブなリンクを論理削除する。
- * メモ削除時に呼び出すことで孤立リンクを防ぐ。
- */
-export async function deactivateLinksForNote(
-  userId: string,
-  boardId: string,
-  noteId: string,
-): Promise<void> {
-  const col = linksCol(userId, boardId);
-  // a / b 各フィールドへの単一フィールドクエリ（自動インデックス）を並列実行
-  const [snapA, snapB] = await Promise.all([
-    getDocs(query(col, where('a', '==', noteId))),
-    getDocs(query(col, where('b', '==', noteId))),
-  ]);
-
-  // isActive: true のものだけをクライアント側で絞り込んで更新
-  const updates: Promise<void>[] = [
-    ...snapA.docs.filter((d) => d.data().isActive).map((d) => updateDoc(d.ref, { isActive: false })),
-    ...snapB.docs.filter((d) => d.data().isActive).map((d) => updateDoc(d.ref, { isActive: false })),
-  ];
-  await Promise.all(updates);
 }

@@ -27,4 +27,5 @@ export type Link = {
   b: string;
   isActive: boolean;
   createdAt: Timestamp;
+  updatedAt: Timestamp;
 };

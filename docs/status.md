@@ -267,6 +267,20 @@
 
 ---
 
+## Phase R1 ― 設計レビュー対応（design-review_2026-07.md）
+
+**ゴール: design-review_2026-07.md の Phase R1（重要度: 高、4件）に対応する**
+
+- [x] R1-1: 購読クエリの絞り込み。`subscribeBoards`/`subscribeNotes`/`subscribeLinks` に `where('isActive', '==', true)` を追加しクライアント側`.filter()`を削除。ボード削除時にnotes/linksを連鎖して`isActive:false`化する処理を`writeBatch`でアトミック化。物理削除の出口は手動実行スクリプト`scripts/cleanup-soft-deleted.mjs`（保持期間30日、Cloud Functions/TTLは不採用）として実装。`links`に`updatedAt`フィールドを追加（`firestore.rules`/`firestore.ts`/型定義）（2026-07-07完了）
+- [x] R1-2: セキュリティルールの強化。`firestore.rules`をboards/notes/linksのコレクション別に分割し、`allow delete: if false`・型検証・`hasOnly()`によるフィールド制限を実装。`scripts/test-firestore-rules.mjs`のエミュレータテスト28件成功を確認後、`pnpm deploy:rules`で本番反映済み（2026-07-06完了）
+- [x] R1-3: ボード削除・初回作成のトランザクション化(一部)。「最後の1枚削除禁止」は`deactivateBoard`を`runTransaction`化し対応完了(候補ボードを個別ドキュメントとして読み直す方式。配下notes/links連鎖も同一トランザクションに統合)。「初回ボード自動作成」の重複防止はWeb SDKの制約(`Transaction.get()`がクエリ非対応)により対応見送り、既存の`useRef`ガードを維持(既知の残課題・優先度低。詳細はdesign-review_2026-07.md参照)（2026-07-07）
+- [x] R1-4: メモ削除+リンク無効化のアトミック化。`deactivateLinksForNote`を`deactivateNote`に統合し、メモ本体+関連リンク(a/bどちらか一致)を同一`writeBatch`でアトミックに論理削除するよう変更(クエリも`where('isActive','==',true)`を追加しクライアント側`.filter()`を撤廃)。読み取り側の防御的フィルタ(両端がactiveなノートを持たないリンクを無視)は`graphUtils.ts`/`Canvas.tsx`に既に実装済みと判明したためコード変更なし。エミュレータで双方向リンクの同時非アクティブ化・部分失敗時のアトミック性・graphUtilsの防御的フィルタを検証(2026-07-07完了)
+
+### ✅ 完了確認
+- [x] design-review_2026-07.md Phase R1 の4項目すべてに対応済み(R1-3の初回ボード自動作成のみ既知の残課題として意図的に見送り)
+
+---
+
 ## チェックリスト外の追加対応（Phase 9 並行作業）
 
 ### デザイン整備

@@ -1,8 +1,133 @@
 rules_version = '2';
+
+// =============================================================
+// Yggd-memo Firestore セキュリティルール（最終版 v1）
+//
+// 改訂方針（設計検査レポート 高-2 対応）:
+//   (a) 物理削除の禁止をルールで強制（allow delete: if false）
+//       → constraints.md NEVERルール#8 をサーバー側の砦に写し取る
+//   (b) コレクションごとにスキーマ（フィールド名・型）を検証
+//   (c) hasOnly() で未知フィールドの書き込みを拒否
+//   (d) ワイルドカード {document=**} を廃止し、
+//       定義外のサブコレクション・パスはデフォルト拒否に倒す
+//   (e) links の a/b を不変化（Claude Codeによる実装突き合わせ済み。
+//       GroupItem.tsxのexecuteDropは旧リンク論理削除+新規作成方式のため、
+//       a/bの書き換えは元々発生しない。ルールで明示的に固定しても
+//       既存動作に影響なし）
+//
+// 突き合わせ確認済み事項（2026-07、Claude Codeによる実装照合）:
+//   - id フィールドはドキュメントに保存されない実装 → hasOnly()と互換
+//   - 自己ループ（a==b）はCanvas.tsx:319のUIガードで防止済み
+//     → d.a != d.b のルールと一致、追加対応不要
+//   - リンク書き換えは発生しない実装 → a/b不変条件を追加可能（本版で追加）
+//
+// 注意: デプロイ前に必ずローカルエミュレータで主要操作
+//       （メモ追加・編集・削除・リンク作成・階層変更・一括削除・
+//       ボード作成）を一通り確認すること。
+// =============================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    // ---- 共通関数 ------------------------------------------
+
+    // 本人確認: 認証済みかつ自分の userId 配下のみ
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
     }
+
+    // 論理削除フラグの型検証（全コレクション共通）
+    function hasValidIsActive(d) {
+      return d.isActive is bool;
+    }
+
+    // ---- users/{userId} ------------------------------------
+    // ユーザードキュメント本体は現状アプリで使用していないため
+    // match を定義しない（＝読み書きともデフォルト拒否）。
+    // 将来プロフィール等を持たせる場合はここに match を追加する。
+
+    // ---- boards --------------------------------------------
+
+    match /users/{userId}/boards/{boardId} {
+
+      function validBoard() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(
+                 ['id', 'name', 'skin', 'isActive', 'createdAt', 'updatedAt'])
+          && d.name is string
+          && d.name.size() > 0
+          && d.name.size() <= 100
+          && d.skin in ['leaf', 'default', 'cloud']
+          && hasValidIsActive(d)
+          && d.createdAt is timestamp   // serverTimestamp() は request.time に解決される
+          && d.updatedAt is timestamp;
+      }
+
+      allow read:   if isOwner(userId);
+      allow create: if isOwner(userId) && validBoard();
+      allow update: if isOwner(userId) && validBoard()
+                    // createdAt の改ざん防止（作成日時は不変とする）
+                    && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;   // 物理削除は全面禁止（論理削除のみ）
+
+      // ---- notes（boards のサブコレクション）---------------
+
+      match /notes/{noteId} {
+
+        function validNote() {
+          let d = request.resource.data;
+          return d.keys().hasOnly(
+                   ['id', 'text', 'x', 'y', 'isActive', 'createdAt', 'updatedAt'])
+            && d.text is string
+            && d.text.size() <= 10000   // 巨大ドキュメント対策（中-1）。上限値は要調整
+            && d.x is number
+            && d.y is number
+            && hasValidIsActive(d)
+            && d.createdAt is timestamp
+            && d.updatedAt is timestamp;
+        }
+
+        allow read:   if isOwner(userId);
+        allow create: if isOwner(userId) && validNote();
+        allow update: if isOwner(userId) && validNote()
+                      && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if false;
+      }
+
+      // ---- links（boards のサブコレクション）---------------
+
+      match /links/{linkId} {
+
+        function validLink() {
+          let d = request.resource.data;
+          return d.keys().hasOnly(
+                   ['id', 'a', 'b', 'isActive', 'createdAt', 'updatedAt'])
+            && d.a is string
+            && d.b is string
+            && d.a != d.b   // 自己ループ禁止。Canvas.tsx:319のUIガードと一致（確認済み）
+            && hasValidIsActive(d)
+            && d.createdAt is timestamp
+            && d.updatedAt is timestamp;   // 論理削除からの経過日数判定に使用（R1-1）
+        }
+
+        allow read:   if isOwner(userId);
+        allow create: if isOwner(userId) && validLink();
+        // a/b不変条件（v1で追加）:
+        //   GroupItem.tsx:237-252のexecuteDropは
+        //   「旧リンクをisActive:falseに更新 + 新規リンク作成」方式であり、
+        //   既存リンクのa/bを書き換える処理は存在しない（Claude Code確認済み）。
+        //   そのため以下の制約を追加しても既存動作への影響はない。
+        allow update: if isOwner(userId) && validLink()
+                      && request.resource.data.createdAt == resource.data.createdAt
+                      && request.resource.data.a == resource.data.a
+                      && request.resource.data.b == resource.data.b;
+        allow delete: if false;
+      }
+    }
+
+    // ---- 上記以外のパス --------------------------------------
+    // match を定義していないパスはすべてデフォルト拒否。
+    // 旧ルールの {document=**} が持っていた「任意サブコレクション
+    // への書き込み自由」はこれで塞がれる。
   }
 }

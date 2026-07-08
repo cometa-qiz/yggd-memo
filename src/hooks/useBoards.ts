@@ -85,7 +85,9 @@ export function useBoards(): UseBoardsReturn {
   const removeBoard = useCallback(
     async (boardId: string): Promise<void> => {
       if (!user) throw new Error('Not authenticated');
-      // 最後の1枚は削除不可（constraints.md ルール #10）
+      // 最後の1枚は削除不可（constraints.md ルール #10）。
+      // ここでの判定はネットワーク往復を避けるための事前チェックに過ぎず、
+      // 実際の不変条件保証は deactivateBoard 内のトランザクションが担う。
       if (boards.length <= 1) return;
       await deactivateBoard(user.uid, boardId);
     },
