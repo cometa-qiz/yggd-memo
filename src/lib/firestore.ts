@@ -36,7 +36,7 @@ export function subscribeBoards(
     query(boardsCol(userId), where('isActive', '==', true)),
     (snap) => {
       const boards = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }) as Board)
+        .map((d) => ({ id: d.id, ...d.data({ serverTimestamps: 'estimate' }) }) as Board)
         .sort((a, b) => a.createdAt?.toMillis?.() - b.createdAt?.toMillis?.());
       onUpdate(boards);
     },
@@ -156,7 +156,7 @@ export function subscribeNotes(
     query(notesCol(userId, boardId), where('isActive', '==', true)),
     (snap) => {
       const notes = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }) as Note)
+        .map((d) => ({ id: d.id, ...d.data({ serverTimestamps: 'estimate' }) }) as Note)
         .sort((a, b) => a.createdAt?.toMillis?.() - b.createdAt?.toMillis?.());
       onUpdate(notes);
     },
@@ -254,7 +254,9 @@ export function subscribeLinks(
   return onSnapshot(
     query(linksCol(userId, boardId), where('isActive', '==', true)),
     (snap) => {
-      const links = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as import('@/types').Link);
+      const links = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data({ serverTimestamps: 'estimate' }) }) as import('@/types').Link
+      );
       onUpdate(links);
     },
     (err) => console.error('[subscribeLinks]', err)
