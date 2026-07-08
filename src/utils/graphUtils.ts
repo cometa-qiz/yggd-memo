@@ -94,6 +94,18 @@ export function groupNotes(notes: Note[], links: Link[]): NoteGroup[] {
   return groups.sort((a, b) => b.notes.length - a.notes.length);
 }
 
+// ── リンクのユーティリティ ────────────────────────────────────────
+
+/**
+ * links の中から a/b（向き問わず）が一致する isActive なリンクを1件返す。
+ * リンク新規作成前の重複チェックに使う（同じペアに2本目を作らせない）。
+ */
+export function findActiveLink(links: Link[], a: string, b: string): Link | undefined {
+  return links.find(
+    (l) => l.isActive && ((l.a === a && l.b === b) || (l.a === b && l.b === a))
+  );
+}
+
 // ── 木構造変換 ────────────────────────────────────────────────────
 
 /**
