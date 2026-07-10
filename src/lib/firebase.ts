@@ -23,9 +23,10 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 // - Next.js 静的ビルド時（Node.js）は window/reCAPTCHAスクリプトが存在しないため呼ばない
 // - サイトキー未設定（Firebaseコンソール側の登録前など）の場合は初期化をスキップする
 //   （docs/quickstart.md STEP 2-6 記載の手順でコンソール登録後、環境変数を設定すること）
-// - 開発環境ではデバッグトークンを有効化し、localhost からのアクセスがブロックされないようにする。
-//   コンソールに出力されるトークンをFirebaseコンソールの
-//   「App Check > アプリ > デバッグトークンを管理」に登録する必要がある
+// - 開発環境では固定のデバッグトークン（NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN）を使う。
+//   `true` を指定するとページ読み込みのたびに新しいトークンがランダム生成され、
+//   Firebaseコンソールに登録しても次の読み込みで別物になり検証が通らないため、
+//   固定の文字列をあらかじめ発行してコンソールに1回だけ登録する運用にしている。
 function initAppCheck() {
   if (typeof window === "undefined") return;
 
@@ -38,8 +39,14 @@ function initAppCheck() {
   }
 
   if (process.env.NODE_ENV !== "production") {
-    (self as typeof self & { FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN =
-      true;
+    const debugToken = process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN;
+    if (!debugToken) {
+      console.warn(
+        "[firebase] NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN が未設定のため、読み込みごとに新しいデバッグトークンがランダム生成されます（Firebaseコンソールへの登録が定着しません）"
+      );
+    }
+    (self as typeof self & { FIREBASE_APPCHECK_DEBUG_TOKEN?: string | boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN =
+      debugToken || true;
   }
 
   initializeAppCheck(app, {
