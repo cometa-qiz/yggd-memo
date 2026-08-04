@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { getToken, initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
 import {
   getFirestore,
@@ -49,10 +49,23 @@ function initAppCheck() {
       debugToken || true;
   }
 
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(siteKey),
-    isTokenAutoRefreshEnabled: true,
-  });
+  // App Checkのトークン取得（reCAPTCHA v3の実行→Firebaseサーバーとのトークン交換）は
+  // Enforce設定のON/OFFに関わらず常に裏側で試みられる。initializeAppCheck()自体は
+  // トークン取得の完了を待たずに戻るため、失敗（reCAPTCHAのドメイン未許可等）があっても
+  // ここでは検知できない。design-review_2026-07.md R4-1調査時、Enforce適用を実際に
+  // 試すまで失敗に気づけなかったため、getToken()を明示的に呼んで結果をログ出力し、
+  // 以後はEnforceを切り替えなくてもブラウザのConsoleで成否を確認できるようにする。
+  try {
+    const appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(siteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+    getToken(appCheck)
+      .then(() => console.info("[firebase] App Check トークンの取得に成功しました"))
+      .catch((err) => console.error("[firebase] App Check トークンの取得に失敗しました:", err));
+  } catch (err) {
+    console.error("[firebase] App Check の初期化に失敗しました:", err);
+  }
 }
 
 initAppCheck();
