@@ -60,9 +60,9 @@ function initAppCheck() {
       provider: new ReCaptchaV3Provider(siteKey),
       isTokenAutoRefreshEnabled: true,
     });
-    getToken(appCheck)
-      .then(() => console.info("[firebase] App Check トークンの取得に成功しました"))
-      .catch((err) => console.error("[firebase] App Check トークンの取得に失敗しました:", err));
+    getToken(appCheck).catch((err) =>
+      console.error("[firebase] App Check トークンの取得に失敗しました:", err)
+    );
   } catch (err) {
     console.error("[firebase] App Check の初期化に失敗しました:", err);
   }
