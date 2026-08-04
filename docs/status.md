@@ -291,6 +291,19 @@
 
 ---
 
+## Phase R4 ― 設計レビュー対応（design-review_2026-07.md・高優先度4件）
+
+**ゴール: design-review_2026-07.md の Phase R4（重要度: 高、4件）に対応する**
+
+- [ ] R4-1: App Checkのモニタリング状況確認・Enforce切り替え判断。Firebase Consoleのメトリクス確認はユーザー側で実施中のため、結果共有後に判断材料を提示する形で保留（2026-08-04時点）
+- [x] R4-2: 本番ビルド前のApp Checkデバッグトークン未設定チェック。`next.config.ts`に、`next build`のproductionフェーズ実行時に`NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN`が非空ならビルドをエラーで中止する機械的チェックを追加（Next.jsは`next.config.ts`評価前に`.env.local`を読み込むため`process.env`を直接参照可能）。あわせて`docs/quickstart.md`に「本番デプロイ前の確認」セクションを追加し、手動確認手順も明記（手順書+機械的チェックの両輪）。トークン設定時にビルドが実際に失敗すること、空にすると成功することを確認済み（[PR #7](https://github.com/cometa-qiz/yggd-memo/pull/7)、2026-08-04完了）
+- [x] R4-3: `scripts/cleanup-soft-deleted.mjs`の認証方式（`firebase-admin`の`cert()`、`serviceAccountKey.json`）を確認。`.gitignore`には既に登録済み・過去に一度もコミットされていないことを確認したが、`docs/constraints.md`のNEVERルール#3に同ファイル名が明記されていなかったため追記（[PR #8](https://github.com/cometa-qiz/yggd-memo/pull/8)、2026-08-04完了）
+- [x] R4-4: `links`コレクションの`updatedAt`欠落調査・バックフィル。読み取り専用の集計スクリプト`scripts/check-links-updated-at.mjs`を作成し本番Firestoreを調査した結果、links総数250件中233件（93%）で`updatedAt`が欠落（`isActive:false`が194件、`isActive:true`が39件）していることが判明。`cleanup-soft-deleted.mjs`は`updatedAt`欠落ドキュメントを安全側に倒し削除対象から除外する実装のため、`isActive:false`の194件は欠落したままだと30日retentionの物理削除が永久に効かない状態だった。`isActive:true`の39件は`deactivateLink`実行時に自動付与されるため対応不要と判断し対象外とした。`scripts/backfill-links-updated-at.mjs`（`--dry-run`対応）を新規作成し、`isActive:false`かつ`updatedAt`欠落の194件に`updatedAt = createdAt`をバックフィル。実行後の再調査で欠落0件（`isActive:false`側）を確認済み。物理削除を伴う`cleanup-soft-deleted.mjs`自体は本対応では実行していない（実行前には全ボードの書き出しバックアップを取得したうえで別途判断）（[PR #9](https://github.com/cometa-qiz/yggd-memo/pull/9)、2026-08-04完了）
+
+> **補足**: R4対応の過程で、`links`コレクショングループへの`isActive`複合インデックスが本番Firestoreに未作成だったことが判明し、Firebaseコンソールから作成した（`cleanup-soft-deleted.mjs`は本番環境ではこれまで一度も実行されていなかったため未検知だった）。
+
+---
+
 ## チェックリスト外の追加対応（Phase 9 並行作業）
 
 ### デザイン整備
