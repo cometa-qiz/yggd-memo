@@ -243,6 +243,21 @@ NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY=ここにSTEP 2-6で取得したサイト
 
 ---
 
+## 本番デプロイ前の確認（`pnpm build` / `pnpm deploy` の前に毎回）
+
+`.env.local` の `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN` は、ローカル開発（`pnpm dev`）中に
+自分の環境をApp Checkの検証対象として通すための値。**本番ビルドに含めるべきものではない。**
+
+1. `pnpm build` を実行する前に、`.env.local` を開いて
+   `NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN=` の行の値が **空になっているか**を目視確認する
+2. 値が入ったまま `pnpm build` を実行すると、`next.config.ts` の機械的チェックにより
+   ビルドがエラーで中止される（安全装置。手順1を忘れても本番ビルドには混入しない）
+3. 本番ビルド・デプロイが終わったら、ローカル開発を再開する前に値を元に戻しておく
+   （戻し忘れると次回の `pnpm dev` でデバッグトークンがランダム生成される警告が出るだけで実害は無いが、
+   Firebaseコンソールへの再登録の手間が増える）
+
+---
+
 ## STEP 4 ｜ Claude Codeに渡す準備をする
 
 ここまで完了したら、Claude Codeに作業を頼む準備が整いました。
