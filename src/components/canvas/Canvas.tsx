@@ -1018,9 +1018,14 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
         </div>
       )}
 
-      {/* 範囲選択削除の確認ポップアップ（設定画面のボード削除と同じスタイル） */}
+      {/* 範囲選択削除の確認ポップアップ（設定画面のボード削除と同じスタイル）
+          選択件数バー（zIndex: 150）より確実に手前に出るよう、Tailwindのz-50ではなく
+          インラインstyleでzIndexを明示指定する */}
       {showRangeDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50"
+          style={{ zIndex: 200 }}
+        >
           <div
             className="rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4 space-y-4"
             style={{ background: 'var(--paper)', border: '1px solid var(--line)' }}
