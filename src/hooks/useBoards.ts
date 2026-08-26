@@ -11,6 +11,28 @@ import {
 } from '@/lib/firestore';
 import type { Board, BoardSkin } from '@/types';
 
+// 最後に表示していたボードIDの永続化キー（起動時の復元用）
+const LAST_BOARD_ID_KEY = 'yggd-memo:lastBoardId';
+
+function loadLastBoardId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage.getItem(LAST_BOARD_ID_KEY);
+  } catch {
+    // プライベートブラウジング等でlocalStorageが使えない場合は無視
+    return null;
+  }
+}
+
+function saveLastBoardId(boardId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(LAST_BOARD_ID_KEY, boardId);
+  } catch {
+    // 保存に失敗しても致命的ではないため無視
+  }
+}
+
 type UseBoardsReturn = {
   boards: Board[];
   loading: boolean;
@@ -44,6 +66,12 @@ export function useBoards(): UseBoardsReturn {
       // 現在のボードが削除された場合は先頭ボードへフォールバック
       setCurrentBoardId((prev) => {
         if (prev && updated.some((b) => b.id === prev)) return prev;
+        // 起動直後（未選択）は前回終了時に開いていたボードを復元。
+        // 保存されたIDが存在しない（削除済み等）場合は先頭ボードへフォールバック。
+        const lastBoardId = prev === null ? loadLastBoardId() : null;
+        if (lastBoardId && updated.some((b) => b.id === lastBoardId)) {
+          return lastBoardId;
+        }
         return updated[0]?.id ?? null;
       });
     });
@@ -51,6 +79,11 @@ export function useBoards(): UseBoardsReturn {
   }, [user]);
 
   const currentBoard = boards.find((b) => b.id === currentBoardId) ?? null;
+
+  // 表示中のボードが変わるたびに、次回起動時の復元用に保存する
+  useEffect(() => {
+    if (currentBoardId) saveLastBoardId(currentBoardId);
+  }, [currentBoardId]);
 
   const switchBoard = useCallback((boardId: string) => {
     setCurrentBoardId(boardId);
