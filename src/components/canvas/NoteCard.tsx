@@ -22,6 +22,10 @@ type Props = {
   isConnectModeSelected?: boolean;
   /** つなぐモード中にこのカードがタップされたときに呼ばれる */
   onConnectModeTap?: (noteId: string) => void;
+  /** 削除モード（タップで即削除する補助モード）が有効かどうか */
+  deleteMode?: boolean;
+  /** 削除モード中にこのカードがタップされたときに呼ばれる */
+  onDeleteModeTap?: (noteId: string) => void;
   /** clip-path アニメーション開始を親（Canvas）に通知するコールバック */
   onExpandChange?: (noteId: string) => void;
 };
@@ -44,6 +48,8 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
   connectMode = false,
   isConnectModeSelected = false,
   onConnectModeTap,
+  deleteMode = false,
+  onDeleteModeTap,
   onExpandChange,
 }, ref) {
   const [editing, setEditing] = useState(false);
@@ -133,8 +139,8 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (editing) return;
-    // つなぐモード中はドラッグ移動・長押し編集を無効化し、タップでの選択・つなぐ操作のみ受け付ける
-    if (connectMode) return;
+    // つなぐモード・削除モード中はドラッグ移動・長押し編集を無効化し、タップ操作のみ受け付ける
+    if (connectMode || deleteMode) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragRef.current = {
       started: true,
@@ -193,6 +199,10 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
       return;
     }
     if (editing) return;
+    if (deleteMode) {
+      onDeleteModeTap?.(note.id);
+      return;
+    }
     if (connectMode) {
       onConnectModeTap?.(note.id);
       return;
@@ -238,7 +248,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         position: 'absolute',
         left: pos.x,
         top: pos.y,
-        cursor: cutMode ? 'default' : connectMode ? 'pointer' : isDragging ? 'grabbing' : 'grab',
+        cursor: cutMode ? 'default' : (connectMode || deleteMode) ? 'pointer' : isDragging ? 'grabbing' : 'grab',
         zIndex: isDragging ? 10 : 1,
         touchAction: 'none',
         userSelect: 'none',
@@ -390,7 +400,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
       )}
 
       {/* 接続ハンドル: クリップラッパー外（クリップされない）。編集中は非表示 */}
-      {!cutMode && !editing && (
+      {!cutMode && !deleteMode && !editing && (
         <div
           className="connect-handle absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
           onPointerDown={(e) => {
