@@ -133,6 +133,8 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (editing) return;
+    // つなぐモード中はドラッグ移動・長押し編集を無効化し、タップでの選択・つなぐ操作のみ受け付ける
+    if (connectMode) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragRef.current = {
       started: true,
