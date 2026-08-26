@@ -8,6 +8,8 @@ import {
   updateBoardName,
   updateBoardSkin,
   deactivateBoard,
+  migrateBoardOrders,
+  reorderBoards as reorderBoardsInFirestore,
 } from '@/lib/firestore';
 import type { Board, BoardSkin } from '@/types';
 
@@ -42,6 +44,7 @@ type UseBoardsReturn = {
   renameBoard: (boardId: string, name: string) => Promise<void>;
   changeBoardSkin: (boardId: string, skin: BoardSkin) => Promise<void>;
   removeBoard: (boardId: string) => Promise<void>;
+  reorderBoards: (orderedBoardIds: string[]) => Promise<void>;
 };
 
 export function useBoards(): UseBoardsReturn {
@@ -51,10 +54,13 @@ export function useBoards(): UseBoardsReturn {
   const [currentBoardId, setCurrentBoardId] = useState<string | null>(null);
   // onSnapshot が複数回発火しても初回の空リスト時に1回だけ作成するためのフラグ
   const autoCreatedRef = useRef(false);
+  // order未設定ボードのマイグレーションを1回だけ実行するためのフラグ
+  const orderMigratedRef = useRef(false);
 
   useEffect(() => {
     if (!user) return;
     autoCreatedRef.current = false;
+    orderMigratedRef.current = false;
     const unsubscribe = subscribeBoards(user.uid, (updated) => {
       setBoards(updated);
       setLoading(false);
@@ -62,6 +68,13 @@ export function useBoards(): UseBoardsReturn {
       if (updated.length === 0 && !autoCreatedRef.current) {
         autoCreatedRef.current = true;
         createBoard(user.uid, 'メインボード');
+      }
+      // order未設定の既存ボードがあれば、createdAt順で採番するマイグレーションを1回だけ実行
+      if (updated.some((b) => typeof b.order !== 'number') && !orderMigratedRef.current) {
+        orderMigratedRef.current = true;
+        migrateBoardOrders(user.uid, updated).catch((err) =>
+          console.error('[migrateBoardOrders]', err)
+        );
       }
       // 現在のボードが削除された場合は先頭ボードへフォールバック
       setCurrentBoardId((prev) => {
@@ -127,6 +140,14 @@ export function useBoards(): UseBoardsReturn {
     [user, boards.length]
   );
 
+  const reorderBoards = useCallback(
+    async (orderedBoardIds: string[]): Promise<void> => {
+      if (!user) throw new Error('Not authenticated');
+      await reorderBoardsInFirestore(user.uid, orderedBoardIds);
+    },
+    [user]
+  );
+
   return {
     boards,
     loading,
@@ -136,5 +157,6 @@ export function useBoards(): UseBoardsReturn {
     renameBoard,
     changeBoardSkin,
     removeBoard,
+    reorderBoards,
   };
 }

@@ -7,6 +7,8 @@ export type Board = {
   name: string;
   skin: BoardSkin;
   isActive: boolean;
+  /** 表示順（昇順）。既存ボードにはマイグレーションで割り振られるため、取得直後は欠けている場合がある */
+  order: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
