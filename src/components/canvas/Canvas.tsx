@@ -106,12 +106,14 @@ type Props = {
   view: CanvasView;
   onEdit: (noteId: string, text: string) => Promise<void>;
   onRemove: (noteId: string) => Promise<void>;
+  /** 範囲選択削除で複数のメモをまとめて削除する（完了後に1件の合算トーストを表示する） */
+  onRemoveMany: (noteIds: string[]) => Promise<void>;
   onMove: (noteId: string, x: number, y: number) => Promise<void>;
   onAddLink: (a: string, b: string) => Promise<string>;
   onRemoveLink: (linkId: string) => Promise<void>;
 };
 
-export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, onMove, onAddLink, onRemoveLink }: Props) {
+export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, onRemoveMany, onMove, onAddLink, onRemoveLink }: Props) {
   const showToast = useToast();
 
   // pan・zoom は useCanvasView フックから受け取る（page.tsx と共有）
@@ -128,6 +130,14 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   const [tapConnectFromId, setTapConnectFromId] = useState<string | null>(null);
   // 削除モード（タップで即削除する補助モード）
   const [deleteMode, setDeleteMode] = useState(false);
+  // 範囲選択モード（背景ドラッグで矩形選択し、まとめて削除する補助モード）
+  const [selectMode, setSelectMode] = useState(false);
+  // 範囲選択で確定した選択中のメモID集合（ドラッグ中はリアルタイムに更新される）
+  const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(() => new Set());
+  // ドラッグ中の選択矩形（canvas要素基準のスクリーン座標px）。ドラッグ中のみ値を持つ
+  const [selectRect, setSelectRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [showRangeDeleteConfirm, setShowRangeDeleteConfirm] = useState(false);
+  const [rangeDeleting, setRangeDeleting] = useState(false);
 
   /** rAF 追従中のカード中心座標（note 座標系）。アニメーション中のみ値が存在する */
   const [liveCardCenters, setLiveCardCenters] = useState<Map<string, { cx: number; cy: number }>>(
@@ -153,6 +163,13 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   // deleteMode も同様にレンダー毎に同期する
   const deleteModeRef = useRef(deleteMode);
   deleteModeRef.current = deleteMode;
+
+  // selectMode も同様にレンダー毎に同期する
+  const selectModeRef = useRef(selectMode);
+  selectModeRef.current = selectMode;
+
+  // 範囲選択ドラッグの開始座標（クライアント座標）。ドラッグ中のみ値を持つ
+  const selectStateRef = useRef<{ startClientX: number; startClientY: number } | null>(null);
 
   const panDragRef = useRef<{
     startPanX: number; startPanY: number;
@@ -370,6 +387,20 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
     await onRemove(noteId);
   }
 
+  // ── 範囲選択モード（背景ドラッグで矩形選択→まとめて削除） ─────────
+
+  function handleCancelRangeSelection() {
+    setSelectedNoteIds(new Set());
+  }
+
+  async function handleConfirmRangeDelete() {
+    setRangeDeleting(true);
+    await onRemoveMany(Array.from(selectedNoteIds));
+    setRangeDeleting(false);
+    setShowRangeDeleteConfirm(false);
+    setSelectedNoteIds(new Set());
+  }
+
   // ── キャンバスのポインターイベント ─────────────────────────────
 
   function handleCanvasPointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -390,6 +421,14 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
       cutStateRef.current = { startX: x, startY: y, prevX: x, prevY: y, cutIds: new Set() };
       setCutLine({ x1: x, y1: y, x2: x, y2: y });
       console.log('[CUT-DBG] PointerDown: cut gesture started x=%f y=%f', x, y);
+      return;
+    }
+
+    if (selectModeRef.current) {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      setSelectedNoteIds(new Set());
+      selectStateRef.current = { startClientX: e.clientX, startClientY: e.clientY };
+      setSelectRect({ left: e.clientX - rect.left, top: e.clientY - rect.top, width: 0, height: 0 });
       return;
     }
 
@@ -478,6 +517,34 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
       return;
     }
 
+    if (selectModeRef.current) {
+      const state = selectStateRef.current;
+      if (!state) return;
+
+      const left = Math.min(state.startClientX, e.clientX) - rect.left;
+      const top = Math.min(state.startClientY, e.clientY) - rect.top;
+      const width = Math.abs(e.clientX - state.startClientX);
+      const height = Math.abs(e.clientY - state.startClientY);
+      setSelectRect({ left, top, width, height });
+
+      // ヒットテスト: 矩形と少しでも重なるメモを選択状態にする（スクリーン座標で比較）
+      const selLeft = Math.min(state.startClientX, e.clientX);
+      const selTop = Math.min(state.startClientY, e.clientY);
+      const selRight = Math.max(state.startClientX, e.clientX);
+      const selBottom = Math.max(state.startClientY, e.clientY);
+
+      const next = new Set<string>();
+      for (const note of notes) {
+        const cardEl = cardElMapRef.current.get(note.id);
+        if (!cardEl) continue;
+        const r = cardEl.getBoundingClientRect();
+        const overlaps = r.left < selRight && r.right > selLeft && r.top < selBottom && r.bottom > selTop;
+        if (overlaps) next.add(note.id);
+      }
+      setSelectedNoteIds(next);
+      return;
+    }
+
     const panDrag = panDragRef.current;
     if (panDrag) {
       setPan({ x: panDrag.startPanX + (e.clientX - panDrag.startPX), y: panDrag.startPanY + (e.clientY - panDrag.startPY) });
@@ -521,6 +588,13 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
       return;
     }
 
+    if (selectModeRef.current) {
+      // ドラッグを離すと選択が確定する。選択矩形だけ消し、selectedNoteIdsは確定状態として残す
+      selectStateRef.current = null;
+      setSelectRect(null);
+      return;
+    }
+
     if (panDragRef.current) {
       panDragRef.current = null;
       setPanDragging(false);
@@ -557,6 +631,14 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
       return;
     }
 
+    if (selectModeRef.current) {
+      if (selectStateRef.current) {
+        selectStateRef.current = null;
+        setSelectRect(null);
+      }
+      return;
+    }
+
     if (panDragRef.current) {
       panDragRef.current = null;
       setPanDragging(false);
@@ -577,6 +659,11 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
       cutStateRef.current = null;
       setCutLine(null);
       commitCuts(state);
+      return;
+    }
+    if (selectModeRef.current) {
+      selectStateRef.current = null;
+      setSelectRect(null);
       return;
     }
     if (panDragRef.current) {
@@ -642,11 +729,14 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   function handleToggleCutMode() {
     setCutMode((prev) => {
       if (!prev) {
-        // 切るモードをONにする: ハンドルドラッグ中の接続と、つなぐモード・削除モードを破棄する
+        // 切るモードをONにする: ハンドルドラッグ中の接続と、他の3モードを破棄する
         setConnecting(null);
         setConnectMode(false);
         setTapConnectFromId(null);
         setDeleteMode(false);
+        setSelectMode(false);
+        setSelectedNoteIds(new Set());
+        setSelectRect(null);
       }
       return !prev;
     });
@@ -655,10 +745,13 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   function handleToggleConnectMode() {
     setConnectMode((prev) => {
       if (!prev) {
-        // つなぐモードをONにする: 切るモード・削除モードと同時には有効にしない。
+        // つなぐモードをONにする: 他の3モードと同時には有効にしない。
         // ハンドルドラッグ中の接続状態が残っていれば破棄する
         setCutMode(false);
         setDeleteMode(false);
+        setSelectMode(false);
+        setSelectedNoteIds(new Set());
+        setSelectRect(null);
         setConnecting(null);
       } else {
         setTapConnectFromId(null);
@@ -670,11 +763,33 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   function handleToggleDeleteMode() {
     setDeleteMode((prev) => {
       if (!prev) {
-        // 削除モードをONにする: 切るモード・つなぐモードと同時には有効にしない
+        // 削除モードをONにする: 他の3モードと同時には有効にしない
         setCutMode(false);
         setConnectMode(false);
         setTapConnectFromId(null);
         setConnecting(null);
+        setSelectMode(false);
+        setSelectedNoteIds(new Set());
+        setSelectRect(null);
+      }
+      return !prev;
+    });
+  }
+
+  function handleToggleSelectMode() {
+    setSelectMode((prev) => {
+      if (!prev) {
+        // 範囲選択モードをONにする: 他の3モードと同時には有効にしない
+        setCutMode(false);
+        setConnectMode(false);
+        setTapConnectFromId(null);
+        setConnecting(null);
+        setDeleteMode(false);
+      } else {
+        // 範囲選択モードをOFFにする: 選択状態も解除する
+        setSelectedNoteIds(new Set());
+        setSelectRect(null);
+        setShowRangeDeleteConfirm(false);
       }
       return !prev;
     });
@@ -693,7 +808,7 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
       ref={canvasRef}
       className={`relative flex-1 overflow-hidden skin-${skin}`}
       style={{
-        cursor: cutMode ? 'crosshair' : (connectMode || deleteMode) ? 'pointer' : connecting ? 'crosshair' : panDragging ? 'grabbing' : 'grab',
+        cursor: (cutMode || selectMode) ? 'crosshair' : (connectMode || deleteMode) ? 'pointer' : connecting ? 'crosshair' : panDragging ? 'grabbing' : 'grab',
         touchAction: 'none',
         backgroundColor: 'var(--field)',
         backgroundImage: 'var(--canvas-image)',
@@ -820,10 +935,31 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
             onConnectModeTap={handleConnectModeTap}
             deleteMode={deleteMode}
             onDeleteModeTap={handleDeleteModeTap}
+            selectMode={selectMode}
+            isRangeSelected={selectedNoteIds.has(note.id)}
             onExpandChange={handleExpandChange}
           />
         ))}
       </div>
+
+      {/* 範囲選択の矩形オーバーレイ: パン・ズームの影響を受けないよう変換ラッパーの外（スクリーン座標）に描画する */}
+      {selectMode && selectRect && (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: selectRect.left,
+            top: selectRect.top,
+            width: selectRect.width,
+            height: selectRect.height,
+            border: '1.5px dashed rgba(var(--accent-rgb), .9)',
+            background: 'rgba(var(--accent-rgb), .12)',
+            borderRadius: '4px',
+            pointerEvents: 'none',
+            zIndex: 25,
+          }}
+        />
+      )}
 
       <CanvasControls
         noteCount={notes.length}
@@ -837,7 +973,85 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
         onToggleConnectMode={handleToggleConnectMode}
         deleteMode={deleteMode}
         onToggleDeleteMode={handleToggleDeleteMode}
+        selectMode={selectMode}
+        onToggleSelectMode={handleToggleSelectMode}
       />
+
+      {/* 範囲選択の確定バー: ドラッグ終了後、選択件数が1件以上ある間だけ表示（トーストと被らない位置） */}
+      {selectMode && !selectRect && selectedNoteIds.size > 0 && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{
+            position: 'fixed',
+            bottom: '160px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 150,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            background: 'var(--paper)',
+            border: '1px solid var(--line)',
+            borderRadius: '999px',
+            boxShadow: '0 4px 14px var(--shadow)',
+            padding: '8px 10px 8px 16px',
+          }}
+        >
+          <span className="text-sm" style={{ color: 'var(--ink)' }}>
+            {selectedNoteIds.size}件選択中
+          </span>
+          <button
+            onClick={() => setShowRangeDeleteConfirm(true)}
+            className="text-sm px-3 py-1.5 rounded-full transition-opacity hover:opacity-80"
+            style={{ background: '#dc2626', color: '#ffffff', border: 'none' }}
+          >
+            削除
+          </button>
+          <button
+            onClick={handleCancelRangeSelection}
+            className="text-sm px-3 py-1.5 rounded-full transition-opacity hover:opacity-80"
+            style={{ background: 'transparent', color: 'var(--ink-soft)', border: '1px solid var(--line)' }}
+          >
+            キャンセル
+          </button>
+        </div>
+      )}
+
+      {/* 範囲選択削除の確認ポップアップ（設定画面のボード削除と同じスタイル） */}
+      {showRangeDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div
+            className="rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4 space-y-4"
+            style={{ background: 'var(--paper)', border: '1px solid var(--line)' }}
+          >
+            <h3 className="text-base font-semibold" style={{ color: 'var(--ink)' }}>
+              選択した{selectedNoteIds.size}件のメモを削除しますか？
+            </h3>
+            <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+              関連するつながりも合わせて削除されます。この操作は取り消せません。
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowRangeDeleteConfirm(false)}
+                disabled={rangeDeleting}
+                className="text-sm px-4 py-2 rounded-xl transition-opacity hover:opacity-80 disabled:opacity-40"
+                style={{ border: '1px solid var(--line)', color: 'var(--ink)', background: 'transparent' }}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleConfirmRangeDelete}
+                disabled={rangeDeleting}
+                className="text-sm px-4 py-2 rounded-xl transition-opacity hover:opacity-80 disabled:opacity-40"
+                style={{ background: 'var(--dusk)', color: '#fff' }}
+              >
+                {rangeDeleting ? '削除中…' : '削除する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
