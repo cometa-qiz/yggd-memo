@@ -16,6 +16,12 @@ type Props = {
   onConnectEnter: (noteId: string) => void;
   onConnectLeave: (noteId: string) => void;
   isConnectTarget: boolean;
+  /** つなぐモード（タップ→タップで接続する補助モード）が有効かどうか */
+  connectMode?: boolean;
+  /** つなぐモードで1つ目にタップされ、選択中であるかどうか */
+  isConnectModeSelected?: boolean;
+  /** つなぐモード中にこのカードがタップされたときに呼ばれる */
+  onConnectModeTap?: (noteId: string) => void;
   /** clip-path アニメーション開始を親（Canvas）に通知するコールバック */
   onExpandChange?: (noteId: string) => void;
 };
@@ -35,6 +41,9 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
   onConnectEnter,
   onConnectLeave,
   isConnectTarget,
+  connectMode = false,
+  isConnectModeSelected = false,
+  onConnectModeTap,
   onExpandChange,
 }, ref) {
   const [editing, setEditing] = useState(false);
@@ -182,6 +191,10 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
       return;
     }
     if (editing) return;
+    if (connectMode) {
+      onConnectModeTap?.(note.id);
+      return;
+    }
     setExpanded((prev) => !prev);
   }
 
@@ -223,7 +236,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         position: 'absolute',
         left: pos.x,
         top: pos.y,
-        cursor: cutMode ? 'default' : isDragging ? 'grabbing' : 'grab',
+        cursor: cutMode ? 'default' : connectMode ? 'pointer' : isDragging ? 'grabbing' : 'grab',
         zIndex: isDragging ? 10 : 1,
         touchAction: 'none',
         userSelect: 'none',
@@ -258,7 +271,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
           flexDirection: 'column',
           justifyContent: 'center',
           boxSizing: 'border-box',
-          filter: isConnectTarget
+          filter: (isConnectTarget || isConnectModeSelected)
             ? 'var(--card-filter) drop-shadow(0 0 9px rgba(var(--accent-rgb),.85))'
             : 'var(--card-filter)',
         }}

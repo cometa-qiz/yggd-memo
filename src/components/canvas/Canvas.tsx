@@ -122,6 +122,10 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   const [cutMode, setCutMode] = useState(false);
   const [cutLine, setCutLine] = useState<CutLineState | null>(null);
   const [panDragging, setPanDragging] = useState(false);
+  // つなぐモード（タップ→タップの2ステップで接続する補助モード。既存のハンドルドラッグ方式と併存する）
+  const [connectMode, setConnectMode] = useState(false);
+  // つなぐモードで1つ目にタップされたメモID（未選択時はnull）
+  const [tapConnectFromId, setTapConnectFromId] = useState<string | null>(null);
 
   /** rAF 追従中のカード中心座標（note 座標系）。アニメーション中のみ値が存在する */
   const [liveCardCenters, setLiveCardCenters] = useState<Map<string, { cx: number; cy: number }>>(
@@ -139,6 +143,10 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   // cutMode をレンダー毎に同期し、イベントハンドラーが常に最新値を参照できるようにする
   const cutModeRef = useRef(cutMode);
   cutModeRef.current = cutMode;
+
+  // connectMode も同様にレンダー毎に同期する
+  const connectModeRef = useRef(connectMode);
+  connectModeRef.current = connectMode;
 
   const panDragRef = useRef<{
     startPanX: number; startPanY: number;
@@ -326,6 +334,28 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
     });
   }
 
+  // ── つなぐモード（タップ→タップ） ───────────────────────────────
+
+  async function handleConnectModeTap(noteId: string) {
+    if (!tapConnectFromId) {
+      setTapConnectFromId(noteId);
+      return;
+    }
+    if (tapConnectFromId === noteId) {
+      // 同じメモを再タップ → 選択解除
+      setTapConnectFromId(null);
+      return;
+    }
+    const fromId = tapConnectFromId;
+    setTapConnectFromId(null);
+    try {
+      await onAddLink(fromId, noteId);
+    } catch (e) {
+      console.error('[Canvas] handleConnectModeTap failed:', e);
+      showToast('つながりの作成に失敗しました。再度お試しください。');
+    }
+  }
+
   // ── キャンバスのポインターイベント ─────────────────────────────
 
   function handleCanvasPointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -346,6 +376,11 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
       cutStateRef.current = { startX: x, startY: y, prevX: x, prevY: y, cutIds: new Set() };
       setCutLine({ x1: x, y1: y, x2: x, y2: y });
       console.log('[CUT-DBG] PointerDown: cut gesture started x=%f y=%f', x, y);
+      return;
+    }
+
+    if (connectModeRef.current) {
+      // つなぐモード中は背景パンを無効化する（つなぐ操作自体はメモカードのタップで行う）
       return;
     }
 
@@ -546,6 +581,7 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
 
   function handleCanvasClick() {
     setSelectedLinkId(null);
+    setTapConnectFromId(null);
   }
 
   // ── ズーム・パン操作（ボタン） ───────────────────────────────────
@@ -586,7 +622,26 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
 
   function handleToggleCutMode() {
     setCutMode((prev) => {
-      if (!prev) setConnecting(null);
+      if (!prev) {
+        // 切るモードをONにする: ハンドルドラッグ中の接続と、つなぐモードの選択を破棄する
+        setConnecting(null);
+        setConnectMode(false);
+        setTapConnectFromId(null);
+      }
+      return !prev;
+    });
+  }
+
+  function handleToggleConnectMode() {
+    setConnectMode((prev) => {
+      if (!prev) {
+        // つなぐモードをONにする: 切るモードと同時には有効にしない。
+        // ハンドルドラッグ中の接続状態が残っていれば破棄する
+        setCutMode(false);
+        setConnecting(null);
+      } else {
+        setTapConnectFromId(null);
+      }
       return !prev;
     });
   }
@@ -604,7 +659,7 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
       ref={canvasRef}
       className={`relative flex-1 overflow-hidden skin-${skin}`}
       style={{
-        cursor: cutMode ? 'crosshair' : connecting ? 'crosshair' : panDragging ? 'grabbing' : 'grab',
+        cursor: cutMode ? 'crosshair' : connectMode ? 'pointer' : connecting ? 'crosshair' : panDragging ? 'grabbing' : 'grab',
         touchAction: 'none',
         backgroundColor: 'var(--field)',
         backgroundImage: 'var(--canvas-image)',
@@ -726,6 +781,9 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
             onConnectEnter={handleConnectEnter}
             onConnectLeave={handleConnectLeave}
             isConnectTarget={connecting?.targetId === note.id}
+            connectMode={connectMode}
+            isConnectModeSelected={tapConnectFromId === note.id}
+            onConnectModeTap={handleConnectModeTap}
             onExpandChange={handleExpandChange}
           />
         ))}
@@ -739,6 +797,8 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
         onCenter={handleCenter}
         cutMode={cutMode}
         onToggleCutMode={handleToggleCutMode}
+        connectMode={connectMode}
+        onToggleConnectMode={handleToggleConnectMode}
       />
     </div>
   );

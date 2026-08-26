@@ -11,6 +11,8 @@ type Props = {
   onCenter: () => void;
   cutMode: boolean;
   onToggleCutMode: () => void;
+  connectMode: boolean;
+  onToggleConnectMode: () => void;
 };
 
 /** 縦区切り線 */
@@ -31,6 +33,8 @@ export function CanvasControls({
   onCenter,
   cutMode,
   onToggleCutMode,
+  connectMode,
+  onToggleConnectMode,
 }: Props) {
   return (
     <>
@@ -133,6 +137,31 @@ export function CanvasControls({
           aria-label="中央寄せ"
         >
           中央
+        </button>
+
+        <Divider />
+
+        {/* つなぐモード */}
+        <button
+          onClick={onToggleConnectMode}
+          className={connectMode ? '' : 'canvas-ctrl-btn'}
+          style={{
+            height: '40px',
+            padding: '0 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '12px',
+            border: 'none',
+            cursor: 'pointer',
+            background: connectMode ? '#2563eb' : 'transparent',
+            color: connectMode ? '#ffffff' : 'var(--ink)',
+            transition: 'background 0.15s ease, color 0.15s ease',
+          }}
+          aria-label="つなぐモード切り替え"
+          aria-pressed={connectMode}
+        >
+          🔗 つなぐ
         </button>
 
         <Divider />
