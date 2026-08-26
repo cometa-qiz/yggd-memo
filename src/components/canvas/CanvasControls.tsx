@@ -15,6 +15,8 @@ type Props = {
   onToggleConnectMode: () => void;
   deleteMode: boolean;
   onToggleDeleteMode: () => void;
+  selectMode: boolean;
+  onToggleSelectMode: () => void;
 };
 
 /** 縦区切り線 */
@@ -39,6 +41,8 @@ export function CanvasControls({
   onToggleConnectMode,
   deleteMode,
   onToggleDeleteMode,
+  selectMode,
+  onToggleSelectMode,
 }: Props) {
   return (
     <>
@@ -216,6 +220,31 @@ export function CanvasControls({
           aria-pressed={deleteMode}
         >
           🗑 削除
+        </button>
+
+        <Divider />
+
+        {/* 範囲選択モード */}
+        <button
+          onClick={onToggleSelectMode}
+          className={selectMode ? '' : 'canvas-ctrl-btn'}
+          style={{
+            height: '40px',
+            padding: '0 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '12px',
+            border: 'none',
+            cursor: 'pointer',
+            background: selectMode ? '#7c3aed' : 'transparent',
+            color: selectMode ? '#ffffff' : 'var(--ink)',
+            transition: 'background 0.15s ease, color 0.15s ease',
+          }}
+          aria-label="範囲選択モード切り替え"
+          aria-pressed={selectMode}
+        >
+          □ 範囲選択
         </button>
       </div>
     </>

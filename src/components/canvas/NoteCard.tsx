@@ -26,6 +26,10 @@ type Props = {
   deleteMode?: boolean;
   /** 削除モード中にこのカードがタップされたときに呼ばれる */
   onDeleteModeTap?: (noteId: string) => void;
+  /** 範囲選択モード（背景ドラッグで矩形選択する補助モード）が有効かどうか */
+  selectMode?: boolean;
+  /** 範囲選択の矩形と重なっており、選択中であるかどうか */
+  isRangeSelected?: boolean;
   /** clip-path アニメーション開始を親（Canvas）に通知するコールバック */
   onExpandChange?: (noteId: string) => void;
 };
@@ -50,6 +54,8 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
   onConnectModeTap,
   deleteMode = false,
   onDeleteModeTap,
+  selectMode = false,
+  isRangeSelected = false,
   onExpandChange,
 }, ref) {
   const [editing, setEditing] = useState(false);
@@ -252,7 +258,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
         zIndex: isDragging ? 10 : 1,
         touchAction: 'none',
         userSelect: 'none',
-        pointerEvents: cutMode ? 'none' : undefined,
+        pointerEvents: (cutMode || selectMode) ? 'none' : undefined,
       }}
       className="group relative min-w-[150px] max-w-[250px]"
       data-note-card="true"
@@ -283,7 +289,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
           flexDirection: 'column',
           justifyContent: 'center',
           boxSizing: 'border-box',
-          filter: (isConnectTarget || isConnectModeSelected)
+          filter: (isConnectTarget || isConnectModeSelected || isRangeSelected)
             ? 'var(--card-filter) drop-shadow(0 0 9px rgba(var(--accent-rgb),.85))'
             : 'var(--card-filter)',
         }}
@@ -400,7 +406,7 @@ export const NoteCard = forwardRef<HTMLDivElement, Props>(function NoteCard({
       )}
 
       {/* 接続ハンドル: クリップラッパー外（クリップされない）。編集中は非表示 */}
-      {!cutMode && !deleteMode && !editing && (
+      {!cutMode && !deleteMode && !selectMode && !editing && (
         <div
           className="connect-handle absolute -right-2 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-crosshair rounded-full border-2 border-slate-300 bg-white opacity-0 transition-opacity group-hover:opacity-100 hover:border-blue-400"
           onPointerDown={(e) => {

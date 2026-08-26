@@ -48,6 +48,18 @@ export default function Home() {
     }
   }
 
+  /** 範囲選択削除: 個別のトーストは出さず、完了後に1件の合算トーストを表示する */
+  async function handleRemoveNotes(noteIds: string[]): Promise<void> {
+    if (noteIds.length === 0) return;
+    try {
+      await Promise.all(noteIds.map((id) => removeNote(id)));
+      showToast(`${noteIds.length}件のメモを削除しました`, 'success');
+    } catch (e) {
+      console.error('[Home] removeNotes (範囲選択削除) failed:', e);
+      showToast('メモの削除に失敗しました。再度お試しください。');
+    }
+  }
+
   async function handleMoveNote(noteId: string, x: number, y: number): Promise<void> {
     const { x: newX, y: newY } = findEmptyPosition(x, y, notes, noteId);
     try {
@@ -68,6 +80,7 @@ export default function Home() {
         view={view}
         onEdit={handleEditNote}
         onRemove={handleRemoveNote}
+        onRemoveMany={handleRemoveNotes}
         onMove={handleMoveNote}
         onAddLink={addLink}
         onRemoveLink={removeLink}
