@@ -19,13 +19,64 @@ type Props = {
   onToggleSelectMode: () => void;
 };
 
-/** 縦区切り線 */
+/** 縦区切り線（横並びレイアウト用） */
 function Divider() {
   return (
     <span
       aria-hidden
       style={{ display: 'block', width: '1px', height: '22px', background: 'var(--line)', flexShrink: 0 }}
     />
+  );
+}
+
+/** 横区切り線（縦積みレイアウト用） */
+function HDivider() {
+  return (
+    <span
+      aria-hidden
+      style={{ display: 'block', width: '100%', height: '1px', background: 'var(--line)', flexShrink: 0 }}
+    />
+  );
+}
+
+type ModeButtonProps = {
+  onClick: () => void;
+  active: boolean;
+  activeColor: string;
+  ariaLabel: string;
+  children: React.ReactNode;
+};
+
+/**
+ * 切る・つなぐ・削除・範囲選択の各モード切り替えボタン。
+ * 横並び（PC）・縦積み（スマホ）どちらの並びでも見た目が崩れないよう、
+ * ボタン自体は幅を親（flex方向）に委ね、ラベルは常にnowrapで折り返さない。
+ */
+function ModeButton({ onClick, active, activeColor, ariaLabel, children }: ModeButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={active ? '' : 'canvas-ctrl-btn'}
+      style={{
+        height: '40px',
+        padding: '0 10px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '4px',
+        fontSize: '12px',
+        border: 'none',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+        background: active ? activeColor : 'transparent',
+        color: active ? '#ffffff' : 'var(--ink)',
+        transition: 'background 0.15s ease, color 0.15s ease',
+      }}
+      aria-label={ariaLabel}
+      aria-pressed={active}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -65,7 +116,10 @@ export function CanvasControls({
         {noteCount}件
       </div>
 
-      {/* コントロール（右下）: design-mockup.html .controls .grp と同仕様 */}
+      {/* コントロール（右下）: design-mockup.html .controls .grp と同仕様
+          モードボタン（つなぐ・切る・削除・範囲選択）部分は display:contents でラップし、
+          スマホ幅ではこの行から丸ごと消えて（hidden）下の縦積みボックスに置き換わる。
+          PC幅（md以上）ではcontentsにより従来と全く同じ横並びに戻る。 */}
       <div
         className="absolute bottom-4 right-4 z-30 flex items-center"
         style={{
@@ -147,105 +201,62 @@ export function CanvasControls({
           中央
         </button>
 
-        <Divider />
+        {/* モードボタン群（PC幅のみ、この行の一部として横並び表示） */}
+        <div className="hidden md:contents">
+          <Divider />
+          <ModeButton onClick={onToggleConnectMode} active={connectMode} activeColor="#2563eb" ariaLabel="つなぐモード切り替え">
+            🔗 つなぐ
+          </ModeButton>
 
-        {/* つなぐモード */}
-        <button
-          onClick={onToggleConnectMode}
-          className={connectMode ? '' : 'canvas-ctrl-btn'}
-          style={{
-            height: '40px',
-            padding: '0 10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px',
-            border: 'none',
-            cursor: 'pointer',
-            background: connectMode ? '#2563eb' : 'transparent',
-            color: connectMode ? '#ffffff' : 'var(--ink)',
-            transition: 'background 0.15s ease, color 0.15s ease',
-          }}
-          aria-label="つなぐモード切り替え"
-          aria-pressed={connectMode}
-        >
+          <Divider />
+          <ModeButton onClick={onToggleCutMode} active={cutMode} activeColor="#dc2626" ariaLabel="切るモード切り替え">
+            ✂ 切る
+          </ModeButton>
+
+          <Divider />
+          <ModeButton onClick={onToggleDeleteMode} active={deleteMode} activeColor="#ea580c" ariaLabel="削除モード切り替え">
+            🗑 削除
+          </ModeButton>
+
+          <Divider />
+          <ModeButton onClick={onToggleSelectMode} active={selectMode} activeColor="#7c3aed" ariaLabel="範囲選択モード切り替え">
+            □ 範囲選択
+          </ModeButton>
+        </div>
+      </div>
+
+      {/* モードボタン群（スマホ幅のみ、ズーム・中央寄せの行の上に縦積み表示） */}
+      <div
+        className="flex md:hidden flex-col absolute right-4 z-30"
+        style={{
+          bottom: '64px',
+          background: 'var(--paper)',
+          border: '1px solid var(--line)',
+          borderRadius: '13px',
+          boxShadow: '0 2px 8px var(--shadow)',
+          overflow: 'hidden',
+        }}
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <ModeButton onClick={onToggleConnectMode} active={connectMode} activeColor="#2563eb" ariaLabel="つなぐモード切り替え">
           🔗 つなぐ
-        </button>
+        </ModeButton>
 
-        <Divider />
-
-        {/* 切るモード */}
-        <button
-          onClick={onToggleCutMode}
-          className={cutMode ? '' : 'canvas-ctrl-btn'}
-          style={{
-            height: '40px',
-            padding: '0 10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px',
-            border: 'none',
-            cursor: 'pointer',
-            background: cutMode ? '#dc2626' : 'transparent',
-            color: cutMode ? '#ffffff' : 'var(--ink)',
-            transition: 'background 0.15s ease, color 0.15s ease',
-          }}
-          aria-label="切るモード切り替え"
-          aria-pressed={cutMode}
-        >
+        <HDivider />
+        <ModeButton onClick={onToggleCutMode} active={cutMode} activeColor="#dc2626" ariaLabel="切るモード切り替え">
           ✂ 切る
-        </button>
+        </ModeButton>
 
-        <Divider />
-
-        {/* 削除モード */}
-        <button
-          onClick={onToggleDeleteMode}
-          className={deleteMode ? '' : 'canvas-ctrl-btn'}
-          style={{
-            height: '40px',
-            padding: '0 10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px',
-            border: 'none',
-            cursor: 'pointer',
-            background: deleteMode ? '#ea580c' : 'transparent',
-            color: deleteMode ? '#ffffff' : 'var(--ink)',
-            transition: 'background 0.15s ease, color 0.15s ease',
-          }}
-          aria-label="削除モード切り替え"
-          aria-pressed={deleteMode}
-        >
+        <HDivider />
+        <ModeButton onClick={onToggleDeleteMode} active={deleteMode} activeColor="#ea580c" ariaLabel="削除モード切り替え">
           🗑 削除
-        </button>
+        </ModeButton>
 
-        <Divider />
-
-        {/* 範囲選択モード */}
-        <button
-          onClick={onToggleSelectMode}
-          className={selectMode ? '' : 'canvas-ctrl-btn'}
-          style={{
-            height: '40px',
-            padding: '0 10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px',
-            border: 'none',
-            cursor: 'pointer',
-            background: selectMode ? '#7c3aed' : 'transparent',
-            color: selectMode ? '#ffffff' : 'var(--ink)',
-            transition: 'background 0.15s ease, color 0.15s ease',
-          }}
-          aria-label="範囲選択モード切り替え"
-          aria-pressed={selectMode}
-        >
+        <HDivider />
+        <ModeButton onClick={onToggleSelectMode} active={selectMode} activeColor="#7c3aed" ariaLabel="範囲選択モード切り替え">
           □ 範囲選択
-        </button>
+        </ModeButton>
       </div>
     </>
   );
