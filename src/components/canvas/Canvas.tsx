@@ -126,6 +126,8 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   const [connectMode, setConnectMode] = useState(false);
   // つなぐモードで1つ目にタップされたメモID（未選択時はnull）
   const [tapConnectFromId, setTapConnectFromId] = useState<string | null>(null);
+  // 削除モード（タップで即削除する補助モード）
+  const [deleteMode, setDeleteMode] = useState(false);
 
   /** rAF 追従中のカード中心座標（note 座標系）。アニメーション中のみ値が存在する */
   const [liveCardCenters, setLiveCardCenters] = useState<Map<string, { cx: number; cy: number }>>(
@@ -147,6 +149,10 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   // connectMode も同様にレンダー毎に同期する
   const connectModeRef = useRef(connectMode);
   connectModeRef.current = connectMode;
+
+  // deleteMode も同様にレンダー毎に同期する
+  const deleteModeRef = useRef(deleteMode);
+  deleteModeRef.current = deleteMode;
 
   const panDragRef = useRef<{
     startPanX: number; startPanY: number;
@@ -356,6 +362,14 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
     }
   }
 
+  // ── 削除モード（タップで即削除） ─────────────────────────────────
+
+  async function handleDeleteModeTap(noteId: string) {
+    // 確認ダイアログは挟まず即削除する。成功・失敗のトースト表示は
+    // onRemove の実体（page.tsx の handleRemoveNote）が担う（既存の仕組みをそのまま利用）
+    await onRemove(noteId);
+  }
+
   // ── キャンバスのポインターイベント ─────────────────────────────
 
   function handleCanvasPointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -381,6 +395,11 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
 
     if (connectModeRef.current) {
       // つなぐモード中は背景パンを無効化する（つなぐ操作自体はメモカードのタップで行う）
+      return;
+    }
+
+    if (deleteModeRef.current) {
+      // 削除モード中も背景パンを無効化する（削除操作自体はメモカードのタップで行う）
       return;
     }
 
@@ -623,10 +642,11 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   function handleToggleCutMode() {
     setCutMode((prev) => {
       if (!prev) {
-        // 切るモードをONにする: ハンドルドラッグ中の接続と、つなぐモードの選択を破棄する
+        // 切るモードをONにする: ハンドルドラッグ中の接続と、つなぐモード・削除モードを破棄する
         setConnecting(null);
         setConnectMode(false);
         setTapConnectFromId(null);
+        setDeleteMode(false);
       }
       return !prev;
     });
@@ -635,12 +655,26 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
   function handleToggleConnectMode() {
     setConnectMode((prev) => {
       if (!prev) {
-        // つなぐモードをONにする: 切るモードと同時には有効にしない。
+        // つなぐモードをONにする: 切るモード・削除モードと同時には有効にしない。
         // ハンドルドラッグ中の接続状態が残っていれば破棄する
         setCutMode(false);
+        setDeleteMode(false);
         setConnecting(null);
       } else {
         setTapConnectFromId(null);
+      }
+      return !prev;
+    });
+  }
+
+  function handleToggleDeleteMode() {
+    setDeleteMode((prev) => {
+      if (!prev) {
+        // 削除モードをONにする: 切るモード・つなぐモードと同時には有効にしない
+        setCutMode(false);
+        setConnectMode(false);
+        setTapConnectFromId(null);
+        setConnecting(null);
       }
       return !prev;
     });
@@ -659,7 +693,7 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
       ref={canvasRef}
       className={`relative flex-1 overflow-hidden skin-${skin}`}
       style={{
-        cursor: cutMode ? 'crosshair' : connectMode ? 'pointer' : connecting ? 'crosshair' : panDragging ? 'grabbing' : 'grab',
+        cursor: cutMode ? 'crosshair' : (connectMode || deleteMode) ? 'pointer' : connecting ? 'crosshair' : panDragging ? 'grabbing' : 'grab',
         touchAction: 'none',
         backgroundColor: 'var(--field)',
         backgroundImage: 'var(--canvas-image)',
@@ -784,6 +818,8 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
             connectMode={connectMode}
             isConnectModeSelected={tapConnectFromId === note.id}
             onConnectModeTap={handleConnectModeTap}
+            deleteMode={deleteMode}
+            onDeleteModeTap={handleDeleteModeTap}
             onExpandChange={handleExpandChange}
           />
         ))}
@@ -799,6 +835,8 @@ export function Canvas({ notes, links, skin = 'leaf', view, onEdit, onRemove, on
         onToggleCutMode={handleToggleCutMode}
         connectMode={connectMode}
         onToggleConnectMode={handleToggleConnectMode}
+        deleteMode={deleteMode}
+        onToggleDeleteMode={handleToggleDeleteMode}
       />
     </div>
   );
