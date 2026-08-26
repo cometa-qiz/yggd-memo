@@ -1,11 +1,22 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useBoardsContext } from '@/contexts/BoardsContext';
 import type { Board } from '@/types';
 
+const DRAG_THRESHOLD_PX = 8;
+
+// Ref で同期的に管理するドラッグ状態（リスト画面の階層ドラッグ実装と同方式）
+type DragRef = {
+  boardId: string;
+  startX: number;
+  startY: number;
+  active: boolean; // 閾値を超えて視覚ドラッグが始まったか
+};
+
 export function BoardManager() {
-  const { boards, currentBoard, addBoard, renameBoard, removeBoard, switchBoard } = useBoardsContext();
+  const { boards, currentBoard, addBoard, renameBoard, removeBoard, switchBoard, reorderBoards } =
+    useBoardsContext();
 
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
@@ -17,6 +28,11 @@ export function BoardManager() {
   const [deleting, setDeleting] = useState(false);
 
   const newInputRef = useRef<HTMLInputElement>(null);
+
+  // 並び替えドラッグ用の状態（Pointer Events方式。HTML5 DnD APIは使用しない）
+  const dragRef = useRef<DragRef | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   async function handleAdd() {
     const trimmed = newName.trim();
@@ -58,6 +74,75 @@ export function BoardManager() {
     }
   }
 
+  function handleDragHandlePointerDown(e: React.PointerEvent, boardId: string) {
+    dragRef.current = {
+      boardId,
+      startX: e.clientX,
+      startY: e.clientY,
+      active: false,
+    };
+  }
+
+  function handleDragPointerMove(e: React.PointerEvent) {
+    const dr = dragRef.current;
+    if (!dr) return;
+
+    if (!dr.active) {
+      const dx = e.clientX - dr.startX;
+      const dy = e.clientY - dr.startY;
+      if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return;
+      dr.active = true;
+      setDraggingId(dr.boardId);
+    }
+
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const target = (el as Element | null)?.closest('[data-board-id]') as HTMLElement | null;
+    setDragOverId(target?.dataset?.boardId ?? null);
+  }
+
+  function clearDrag() {
+    dragRef.current = null;
+    setDraggingId(null);
+    setDragOverId(null);
+  }
+
+  function handleDragPointerUp(e: React.PointerEvent) {
+    const dr = dragRef.current;
+    if (!dr) return;
+
+    if (!dr.active) {
+      // 閾値未満のタップ → ドラッグとして扱わない
+      dragRef.current = null;
+      return;
+    }
+
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const target = (el as Element | null)?.closest('[data-board-id]') as HTMLElement | null;
+    const targetId = target?.dataset?.boardId ?? null;
+
+    // clearDrag を先に呼んでから非同期処理へ
+    const { boardId: draggedId } = dr;
+    clearDrag();
+
+    if (targetId) void executeReorder(draggedId, targetId);
+  }
+
+  async function executeReorder(draggedId: string, targetId: string) {
+    if (draggedId === targetId) return;
+
+    const ids = boards.map((b) => b.id);
+    const fromIndex = ids.indexOf(draggedId);
+    if (fromIndex === -1) return;
+    ids.splice(fromIndex, 1);
+
+    // ドラッグ元を除いた並びの中で、ドロップ先のあった位置に挿入する
+    const toIndex = ids.indexOf(targetId);
+    if (toIndex === -1) return;
+    ids.splice(toIndex, 0, draggedId);
+
+    await reorderBoards(ids);
+  }
+
   return (
     <>
     <section className="space-y-4">
@@ -76,9 +161,45 @@ export function BoardManager() {
         {boards.map((board) => (
           <li
             key={board.id}
-            className="flex items-center gap-2 px-4 py-3"
-            style={{ background: 'var(--paper)', borderColor: 'var(--line)' }}
+            data-board-id={board.id}
+            className="flex items-center gap-2 px-4 py-3 transition-colors"
+            style={{
+              background:
+                dragOverId === board.id && draggingId !== board.id
+                  ? 'rgba(var(--accent-rgb), 0.12)'
+                  : 'var(--paper)',
+              borderColor: 'var(--line)',
+              opacity: draggingId === board.id ? 0.4 : 1,
+              outline:
+                dragOverId === board.id && draggingId !== board.id
+                  ? '1px solid rgba(var(--accent-rgb), 0.4)'
+                  : 'none',
+            }}
           >
+            {/* 並び替え用ドラッグハンドル */}
+            <span
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                // 即座にキャプチャ → 以降のmove/upを確実にこの要素で受け取る
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                handleDragHandlePointerDown(e, board.id);
+              }}
+              onPointerMove={handleDragPointerMove}
+              onPointerUp={handleDragPointerUp}
+              onPointerCancel={clearDrag}
+              className="shrink-0 select-none text-sm leading-none"
+              style={{
+                color: 'var(--ink-soft)',
+                // タッチデバイスでブラウザのスクロール処理をキャンセルし、ドラッグを優先させる
+                touchAction: 'none',
+                cursor: draggingId === board.id ? 'grabbing' : 'grab',
+              }}
+              aria-label={`${board.name} をドラッグして並び替え`}
+              role="button"
+            >
+              ⠿
+            </span>
+
             {renamingId === board.id ? (
               <>
                 <input

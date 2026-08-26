@@ -53,12 +53,15 @@ service cloud.firestore {
       function validBoard() {
         let d = request.resource.data;
         return d.keys().hasOnly(
-                 ['id', 'name', 'skin', 'isActive', 'createdAt', 'updatedAt'])
+                 ['id', 'name', 'skin', 'isActive', 'order', 'createdAt', 'updatedAt'])
           && d.name is string
           && d.name.size() > 0
           && d.name.size() <= 100
           && d.skin in ['leaf', 'default', 'cloud']
           && hasValidIsActive(d)
+          // order は任意（既存ボードにはマイグレーションで後付けされるため必須にしない）。
+          // 持たせる場合は number 型であることのみ検証する。
+          && (!d.keys().hasAny(['order']) || d.order is number)
           && d.createdAt is timestamp   // serverTimestamp() は request.time に解決される
           && d.updatedAt is timestamp;
       }

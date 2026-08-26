@@ -28,7 +28,10 @@ function boardRef(userId: string, boardId: string) {
 
 // ── ボードの読み書き関数 ────────────────────────────────────────
 
-/** isActive:true のボードをリアルタイムで購読する */
+// order未設定のボード（マイグレーション未実施）を末尾に回すためのフォールバック値
+const UNORDERED_FALLBACK = Number.MAX_SAFE_INTEGER;
+
+/** isActive:true のボードをリアルタイムで購読する。表示順は order の昇順（無い場合はcreatedAt昇順で末尾に） */
 export function subscribeBoards(
   userId: string,
   onUpdate: (boards: Board[]) => void
@@ -38,27 +41,75 @@ export function subscribeBoards(
     (snap) => {
       const boards = snap.docs
         .map((d) => ({ id: d.id, ...d.data({ serverTimestamps: 'estimate' }) }) as Board)
-        .sort((a, b) => a.createdAt?.toMillis?.() - b.createdAt?.toMillis?.());
+        .sort((a, b) => {
+          const orderA = typeof a.order === 'number' ? a.order : UNORDERED_FALLBACK;
+          const orderB = typeof b.order === 'number' ? b.order : UNORDERED_FALLBACK;
+          if (orderA !== orderB) return orderA - orderB;
+          return a.createdAt?.toMillis?.() - b.createdAt?.toMillis?.();
+        });
       onUpdate(boards);
     },
     (err) => console.error('[subscribeBoards]', err)
   );
 }
 
-/** 新しいボードを作成して docId を返す */
+/** 新しいボードを作成して docId を返す（表示順は末尾に追加） */
 export async function createBoard(
   userId: string,
   name: string,
   skin: BoardSkin = 'leaf'
 ): Promise<string> {
+  const activeSnap = await getDocs(query(boardsCol(userId), where('isActive', '==', true)));
+  const maxOrder = activeSnap.docs.reduce((max, d) => {
+    const order = d.data().order;
+    return typeof order === 'number' && order > max ? order : max;
+  }, -1);
+
   const ref = await addDoc(boardsCol(userId), {
     name,
     skin,
     isActive: true,
+    order: maxOrder + 1,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
   return ref.id;
+}
+
+/**
+ * order フィールドが無い既存ボードに、createdAt昇順でorderを割り振る（マイグレーション）。
+ * 既にorderを持つボードの最大値の続きから採番するため、二重実行・部分実行があっても安全（冪等）。
+ */
+export async function migrateBoardOrders(userId: string, boards: Board[]): Promise<void> {
+  const withOrder = boards.filter((b) => typeof b.order === 'number');
+  const withoutOrder = boards.filter((b) => typeof b.order !== 'number');
+  if (withoutOrder.length === 0) return;
+
+  const maxOrder = withOrder.reduce((max, b) => Math.max(max, b.order), -1);
+  const sorted = [...withoutOrder].sort(
+    (a, b) => (a.createdAt?.toMillis?.() ?? 0) - (b.createdAt?.toMillis?.() ?? 0)
+  );
+
+  const batch = writeBatch(db);
+  sorted.forEach((board, i) => {
+    batch.update(boardRef(userId, board.id), {
+      order: maxOrder + 1 + i,
+      updatedAt: serverTimestamp(),
+    });
+  });
+  await batch.commit();
+}
+
+/** ドラッグ並び替え確定時に、渡された順序どおりorderを0始まりで振り直す */
+export async function reorderBoards(userId: string, orderedBoardIds: string[]): Promise<void> {
+  const batch = writeBatch(db);
+  orderedBoardIds.forEach((boardId, i) => {
+    batch.update(boardRef(userId, boardId), {
+      order: i,
+      updatedAt: serverTimestamp(),
+    });
+  });
+  await batch.commit();
 }
 
 /** ボード名を変更する */

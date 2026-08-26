@@ -151,6 +151,32 @@ console.log(bold('\n[Board] CRUD 操作'));
       unknownField: 'should be rejected'
     }))
   );
+
+  await test('order（数値）を含むボード作成が成功する', () =>
+    assertSucceeds(addDoc(collection(db, 'users', USER_A, 'boards'), {
+      name: '並び替え対応ボード', skin: 'leaf', isActive: true, order: 0,
+      createdAt: now(), updatedAt: now()
+    }))
+  );
+
+  await test('orderが数値でない場合は拒否される', () =>
+    assertFails(addDoc(collection(db, 'users', USER_A, 'boards'), {
+      name: 'Bad Order', skin: 'leaf', isActive: true, order: '0',
+      createdAt: now(), updatedAt: now()
+    }))
+  );
+
+  await test('orderフィールドが無いボード更新（マイグレーション前想定）も引き続き成功する', () =>
+    assertSucceeds(updateDoc(doc(db, 'users', USER_A, 'boards', 'board1'), {
+      name: 'マイグレーション前更新', updatedAt: now()
+    }))
+  );
+
+  await test('ドラッグ並び替え（orderのみ更新）が成功する', () =>
+    assertSucceeds(updateDoc(doc(db, 'users', USER_A, 'boards', 'board1'), {
+      order: 3, updatedAt: now()
+    }))
+  );
 }
 
 // ---- Note CRUD -------------------------------------------
